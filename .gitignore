@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+storybook-static/
+
+# Coverage and test artifacts
+coverage/
+.nyc_output/
+
+# Environment files (keep examples)
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Caches
+.cache/
+.vite/
+*.tsbuildinfo
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+
+# Local tooling data
+.zoro/
+.clinerules/

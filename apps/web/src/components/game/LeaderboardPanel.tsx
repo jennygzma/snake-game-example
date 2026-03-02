@@ -1,0 +1,47 @@
+import { Box, Divider, Stack, Typography } from "@mui/material";
+import type { LeaderboardEntry } from "@snake/contracts";
+
+const formatEndedAt = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString();
+};
+
+type LeaderboardPanelProps = {
+  entries: LeaderboardEntry[];
+};
+
+export const LeaderboardPanel = ({ entries }: LeaderboardPanelProps) => {
+  return (
+    <Stack spacing={1}>
+      <Typography variant="h6">Leaderboard</Typography>
+      {entries.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No scores yet. Finish a run to create leaderboard entries.
+        </Typography>
+      ) : (
+        <Stack divider={<Divider flexItem />}>
+          {entries.map((entry) => (
+            <Box
+              key={`${entry.rank}-${entry.userId}-${entry.endedAt}`}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "48px 1fr auto",
+                alignItems: "center",
+                py: 1
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                #{entry.rank}
+              </Typography>
+              <Typography variant="body2">{entry.score} pts</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatEndedAt(entry.endedAt)}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </Stack>
+  );
+};
