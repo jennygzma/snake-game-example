@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Box, Container, Stack, Typography } from "@mui/material";
-import PauseRounded from "@mui/icons-material/PauseRounded";
-import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
-import ReplayRounded from "@mui/icons-material/ReplayRounded";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
 import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
@@ -14,6 +11,7 @@ import { useKeyboard } from "../hooks/useKeyboard";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
+import { approvedIcons } from "../theme/approvedIcons";
 
 const resolveService = (): GameService => {
   const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
@@ -26,7 +24,7 @@ export const App = () => {
     useGame(service);
   const serviceMode = import.meta.env.VITE_GAME_SERVICE_MODE === "local" ? "local" : "api";
   const pauseLabel = game.status === "paused" ? "Resume" : "Pause";
-  const isGameOverOpen = game.status === "game-over";
+  const isGameOverView = game.status === "game-over";
   const [announcement, setAnnouncement] = useState("Snake loaded. Press Enter to start.");
   const previousStatusRef = useRef(game.status);
   const previousScoreRef = useRef(game.score);
@@ -70,9 +68,13 @@ export const App = () => {
     previousHighScoreRef.current = highScore;
   }, [game.score, game.status, highScore]);
 
+  if (isGameOverView) {
+    return <GameOverScreen score={game.score} onRestart={startGame} />;
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={2} aria-hidden={isGameOverOpen}>
+      <Stack spacing={2}>
         <Typography variant="caption" color="text.secondary">
           Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
         </Typography>
@@ -97,7 +99,7 @@ export const App = () => {
         >
           {announcement}
         </Box>
-        {error ? <Alert severity="warning">{error}</Alert> : null}
+        {error ? <Alert severity="error">{error}</Alert> : null}
         <Box
           sx={{
             display: "grid",
@@ -127,7 +129,7 @@ export const App = () => {
                 <Stack direction={{ xs: "row", sm: "column" }} spacing={1.5}>
                   <ActionButton
                     tone="play"
-                    icon={<PlayArrowRounded />}
+                    icon={<approvedIcons.play />}
                     responsiveIconOnly
                     onClick={startGame}
                   >
@@ -135,7 +137,7 @@ export const App = () => {
                   </ActionButton>
                   <ActionButton
                     tone="pause"
-                    icon={<PauseRounded />}
+                    icon={<approvedIcons.pause />}
                     responsiveIconOnly
                     onClick={togglePause}
                   >
@@ -143,7 +145,7 @@ export const App = () => {
                   </ActionButton>
                   <ActionButton
                     tone="neutral"
-                    icon={<ReplayRounded />}
+                    icon={<approvedIcons.replay />}
                     responsiveIconOnly
                     onClick={resetGame}
                   >
@@ -155,8 +157,6 @@ export const App = () => {
           </Box>
         </Box>
       </Stack>
-
-      <GameOverScreen open={isGameOverOpen} score={game.score} onRestart={startGame} />
     </Container>
   );
 };

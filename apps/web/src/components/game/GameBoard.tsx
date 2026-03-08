@@ -30,7 +30,7 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
         mx: "auto",
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 1,
+        borderRadius: `${gameTokens.radius.sm}px`,
         overflow: "hidden",
         backgroundColor: gameTokens.colors.boardBg
       }}

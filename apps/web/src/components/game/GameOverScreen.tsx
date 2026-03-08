@@ -1,29 +1,34 @@
-import { Stack, Typography } from "@mui/material";
-import ReplayRounded from "@mui/icons-material/ReplayRounded";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import { ActionButton } from "../shared/ActionButton";
-import { ModalShell } from "../shared/ModalShell";
+import { Panel } from "../shared/Panel";
+import { approvedIcons } from "../../theme/approvedIcons";
 
 type GameOverScreenProps = {
-  open: boolean;
   score: number;
   onRestart: () => void;
 };
 
-export const GameOverScreen = ({ open, score, onRestart }: GameOverScreenProps) => {
-  const titleId = "game-over-title";
-  const descriptionId = "game-over-description";
-
+export const GameOverScreen = ({ score, onRestart }: GameOverScreenProps) => {
   return (
-    <ModalShell open={open} ariaLabelledBy={titleId} ariaDescribedBy={descriptionId}>
-      <Stack spacing={2}>
-        <Typography id={titleId} variant="h5">
-          Game Over
-        </Typography>
-        <Typography id={descriptionId}>Your score: {score}</Typography>
-        <ActionButton icon={<ReplayRounded />} responsiveIconOnly onClick={onRestart}>
-          Play Again
-        </ActionButton>
-      </Stack>
-    </ModalShell>
+    <Container maxWidth="sm" sx={{ py: 6 }}>
+      <Panel>
+        <Stack spacing={3}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+            <ActionButton
+              tone="neutral"
+              icon={<approvedIcons.play />}
+              iconOnly
+              aria-label="Start a new game"
+              onClick={onRestart}
+            />
+          </Box>
+          <Typography variant="h4">Game Over</Typography>
+          <Typography>Your score: {score}</Typography>
+          <ActionButton icon={<approvedIcons.replay />} responsiveIconOnly onClick={onRestart}>
+            Play Again
+          </ActionButton>
+        </Stack>
+      </Panel>
+    </Container>
   );
 };

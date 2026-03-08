@@ -68,7 +68,7 @@ export const ActionButton = ({
           minHeight: 52,
           minWidth: isIconOnly ? 52 : undefined,
           px: isIconOnly ? 0 : 2.25,
-          borderRadius: "12px",
+          borderRadius: `${gameTokens.radius.md}px`,
           boxShadow: gameTokens.shadow.inset,
           fontWeight: 700
         },

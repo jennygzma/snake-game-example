@@ -1,8 +1,8 @@
-import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
 import { ThemeProvider } from "@mui/material";
 import { render } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
+import { approvedIcons } from "../../../theme/approvedIcons";
 import { appTheme } from "../../../theme/theme";
 import { ActionButton } from "../ActionButton";
 
@@ -34,7 +34,7 @@ describe("ActionButton accessibility", () => {
       <ThemeProvider theme={appTheme}>
         <ActionButton
           tone="play"
-          icon={<PlayArrowRounded />}
+          icon={<approvedIcons.play />}
           responsiveIconOnly
           aria-label="Start"
         >
