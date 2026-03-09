@@ -30,3 +30,9 @@ Thumbs.db
 # Local tooling data
 .zoro/
 .clinerules/
+
+# Local runtime database artifacts
+apps/api/*.db
+apps/api/*.db-shm
+apps/api/*.db-wal
+apps/api/data/
