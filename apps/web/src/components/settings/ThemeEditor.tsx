@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import type { CustomTheme, SaveThemeInput } from "@snake/contracts";
 import { ColorPickerField } from "./ColorPickerField";
@@ -11,40 +11,42 @@ interface ThemeEditorProps {
 }
 
 export const ThemeEditor = ({ theme, onSave, onCancel }: ThemeEditorProps) => {
+  const getDefaultColors = () => ({
+    bg: "#1a1a1a",
+    panel: "#2a2a2a",
+    panelBorder: "#3a3a3a",
+    text: "#ffffff",
+    textMuted: "#999999",
+    snake: "#87ae73",
+    snakeHead: "#6b8a5c",
+    food: "#9a4e4e",
+    boardGrid: "rgba(255,255,255,0.05)",
+    boardBg: "#0a0a0a",
+    action: "#87ae73",
+    actionHover: "#6b8a5c",
+    actionText: "#ffffff",
+    pause: "#FDB813",
+    pauseHover: "#e5a511",
+    pauseText: "#000000",
+    neutral: "#9e9e9e",
+    neutralHover: "#808080",
+    neutralText: "#ffffff",
+    danger: "#9a4e4e",
+    dangerHover: "#7a3e3e",
+    dangerText: "#ffffff"
+  });
+
   const [fontFamily, setFontFamily] = useState(theme?.fontFamily || "Arial");
-  const [colors, setColors] = useState(
-    theme?.colors || {
-      bg: "#1a1a1a",
-      panel: "#2a2a2a",
-      panelBorder: "#3a3a3a",
-      text: "#ffffff",
-      textMuted: "#999999",
-      snake: "#87ae73",
-      snakeHead: "#6b8a5c",
-      food: "#9a4e4e",
-      boardGrid: "rgba(255,255,255,0.05)",
-      boardBg: "#0a0a0a",
-      action: "#87ae73",
-      actionHover: "#6b8a5c",
-      actionText: "#ffffff",
-      pause: "#FDB813",
-      pauseHover: "#e5a511",
-      pauseText: "#000000",
-      neutral: "#9e9e9e",
-      neutralHover: "#808080",
-      neutralText: "#ffffff",
-      danger: "#9a4e4e",
-      dangerHover: "#7a3e3e",
-      dangerText: "#ffffff"
-    }
-  );
-  const [iconColors, setIconColors] = useState(
-    theme?.iconColors || {
-      default: "#ffffff"
-    }
-  );
+  const [colors, setColors] = useState(theme?.colors || getDefaultColors());
+  const [iconColors, setIconColors] = useState(theme?.iconColors || { default: "#ffffff" });
 
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setFontFamily(theme?.fontFamily || "Arial");
+    setColors(theme?.colors || getDefaultColors());
+    setIconColors(theme?.iconColors || { default: "#ffffff" });
+  }, [theme]);
 
   const handleColorChange = (colorKey: keyof typeof colors, value: string) => {
     setColors((prev) => ({ ...prev, [colorKey]: value }));
