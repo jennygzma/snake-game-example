@@ -1,6 +1,5 @@
-import { Box } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import type { Cell } from "../../types/game";
-import { gameTokens } from "../../theme/tokens";
 
 type GameBoardProps = {
   gridSize: number;
@@ -11,6 +10,7 @@ type GameBoardProps = {
 const toKey = (cell: Cell): string => `${cell.x}:${cell.y}`;
 
 export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
+  const theme = useTheme();
   const snakeSet = new Set(snake.map(toKey));
   const head = snake[0];
   const snakeHeadKey = head ? toKey(head) : "";
@@ -30,9 +30,9 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
         mx: "auto",
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: `${gameTokens.radius.sm}px`,
+        borderRadius: 1,
         overflow: "hidden",
-        backgroundColor: gameTokens.colors.boardBg
+        backgroundColor: theme.game.boardBg
       }}
     >
       {cells.map((cell) => {
@@ -45,13 +45,13 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
           <Box
             key={key}
             sx={{
-              border: `1px solid ${gameTokens.colors.boardGrid}`,
+              border: `1px solid ${theme.game.boardGrid}`,
               backgroundColor: isHead
-                ? gameTokens.colors.snakeHead
+                ? theme.game.snakeHead
                 : isSnake
-                  ? gameTokens.colors.snake
+                  ? theme.game.snake
                   : isFood
-                    ? gameTokens.colors.food
+                    ? theme.game.food
                     : "transparent"
             }}
           />

@@ -11,5 +11,8 @@
     "dev:api": "npm --workspace @snake/api run dev",
     "build": "npm run build -ws",
     "typecheck": "npm run typecheck -ws"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.3"
   }
 }
