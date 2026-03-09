@@ -7,16 +7,18 @@ import type {
   ActiveThemeResponse
 } from "@snake/contracts";
 import { themeQueries } from "../db/themeQueries";
+import { profileQueries } from "../db/profileQueries";
 
 export const createThemeDataService = (db: Database) => {
   const queries = themeQueries(db);
+  const profileQs = profileQueries(db);
 
   return {
     /**
-     * List all themes for a user
+     * List all themes for a profile
      */
-    listThemes(userId: string): ThemesListResponse {
-      const themes = queries.listByUserId(userId);
+    listThemes(profileId: string): ThemesListResponse {
+      const themes = queries.listByProfileId(profileId);
       return { themes };
     },
 
@@ -30,18 +32,24 @@ export const createThemeDataService = (db: Database) => {
     },
 
     /**
-     * Get the active theme for a user
+     * Get the active theme for a profile
      */
-    getActiveTheme(userId: string): ActiveThemeResponse {
-      const theme = queries.getActive(userId);
+    getActiveTheme(profileId: string): ActiveThemeResponse {
+      const theme = queries.getActiveByProfileId(profileId);
       return { theme };
     },
 
     /**
-     * Create a new theme
+     * Create a new theme for active profile
      */
     createTheme(userId: string, input: SaveThemeInput): ThemeResponse {
-      const theme = queries.create(userId, input);
+      // Get active profile
+      const activeProfile = profileQs.getActive();
+      if (!activeProfile) {
+        throw new Error("No active profile found");
+      }
+      
+      const theme = queries.create(userId, activeProfile.id, input);
       return { theme };
     },
 

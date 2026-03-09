@@ -18,7 +18,11 @@ type Store = {
 const store: Store = {
   profile: {
     id: "dev-user-1",
-    name: "Player"
+    name: "Player",
+    avatarBase64: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isActive: true
   },
   settings: DEFAULT_SETTINGS,
   runs: [
@@ -56,6 +60,7 @@ export const gameDataService = {
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: store.profile.name,
         score: run.score,
         endedAt: run.endedAt
       }));
@@ -64,9 +69,10 @@ export const gameDataService = {
   },
 
   saveRun(input: RunRecordInput): RunRecord {
+    // Use active profile ID for game runs
     const run: RunRecord = {
       id: crypto.randomUUID(),
-      userId: store.profile.id,
+      userId: store.profile.id, // This represents profileId in the context of game runs
       ...input
     };
 

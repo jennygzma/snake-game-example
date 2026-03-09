@@ -30,7 +30,14 @@ const ensureProfile = (): Profile => {
     }
   }
 
-  const profile: Profile = { id: crypto.randomUUID(), name: "Player" };
+  const profile: Profile = {
+    id: crypto.randomUUID(),
+    name: "Player",
+    avatarBase64: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isActive: true
+  };
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
   return profile;
 };
@@ -61,12 +68,14 @@ export const localGameService: GameService = {
   },
 
   async getLeaderboard(limit: number) {
+    const profile = ensureProfile();
     const entries = readRuns()
       .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
       .slice(0, Math.max(1, limit))
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: profile.name,
         score: run.score,
         endedAt: run.endedAt
       }));

@@ -4,6 +4,7 @@ import type { CustomTheme } from "@snake/contracts";
 import { createThemeFromCustom, getDefaultTheme } from "../theme/themeFactory";
 import { apiThemeService } from "../services/adapters/apiThemeService";
 import { localThemeService } from "../services/storage/localThemeService";
+import { useAppProfile } from "./ProfileContext";
 
 const USE_API = import.meta.env.VITE_USE_API === "true";
 const themeService = USE_API ? apiThemeService : localThemeService;
@@ -29,10 +30,11 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
+  const { activeProfile } = useAppProfile();
   const [theme, setTheme] = useState<Theme>(getDefaultTheme());
   const [activeCustomTheme, setActiveCustomTheme] = useState<CustomTheme | null>(null);
 
-  // Load active theme on mount
+  // Load active theme when active profile changes
   useEffect(() => {
     const loadActiveTheme = async () => {
       try {
@@ -40,14 +42,28 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
         if (response.theme) {
           setActiveCustomTheme(response.theme);
           setTheme(createThemeFromCustom(response.theme));
+        } else {
+          // No active theme for this profile, use default
+          setActiveCustomTheme(null);
+          setTheme(getDefaultTheme());
         }
       } catch (error) {
         console.error("Failed to load active theme:", error);
+        // Fall back to default theme on error
+        setActiveCustomTheme(null);
+        setTheme(getDefaultTheme());
       }
     };
 
-    loadActiveTheme();
-  }, []);
+    // Only load theme if we have an active profile
+    if (activeProfile) {
+      loadActiveTheme();
+    } else {
+      // No active profile, reset to default
+      setActiveCustomTheme(null);
+      setTheme(getDefaultTheme());
+    }
+  }, [activeProfile]);
 
   // Update theme whenever activeCustomTheme changes
   useEffect(() => {

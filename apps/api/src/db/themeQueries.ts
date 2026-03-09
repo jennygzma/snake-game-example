@@ -3,19 +3,20 @@ import type { CustomTheme, SaveThemeInput, ThemeColors, ThemeIconColors } from "
 
 export const themeQueries = (db: Database) => ({
   /**
-   * List all themes for a user
+   * List all themes for a profile
    */
-  listByUserId(userId: string): CustomTheme[] {
+  listByProfileId(profileId: string): CustomTheme[] {
     const rows = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
-         WHERE user_id = ?
+         WHERE profile_id = ?
          ORDER BY created_at DESC`
       )
-      .all(userId) as Array<{
+      .all(profileId) as Array<{
       id: string;
       user_id: string;
+      profile_id: string | null;
       name: string;
       font_family: string;
       colors: string;
@@ -44,7 +45,7 @@ export const themeQueries = (db: Database) => ({
   getById(id: string): CustomTheme | null {
     const row = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
          WHERE id = ?`
       )
@@ -52,6 +53,7 @@ export const themeQueries = (db: Database) => ({
       | {
           id: string;
           user_id: string;
+          profile_id: string | null;
           name: string;
           font_family: string;
           colors: string;
@@ -78,20 +80,21 @@ export const themeQueries = (db: Database) => ({
   },
 
   /**
-   * Get the active theme for a user
+   * Get the active theme for a profile
    */
-  getActive(userId: string): CustomTheme | null {
+  getActiveByProfileId(profileId: string): CustomTheme | null {
     const row = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
-         WHERE user_id = ? AND is_active = 1
+         WHERE profile_id = ? AND is_active = 1
          LIMIT 1`
       )
-      .get(userId) as
+      .get(profileId) as
       | {
           id: string;
           user_id: string;
+          profile_id: string | null;
           name: string;
           font_family: string;
           colors: string;
@@ -118,18 +121,19 @@ export const themeQueries = (db: Database) => ({
   },
 
   /**
-   * Create a new theme
+   * Create a new theme for a profile
    */
-  create(userId: string, input: SaveThemeInput): CustomTheme {
+  create(userId: string, profileId: string, input: SaveThemeInput): CustomTheme {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO custom_themes (id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
+      `INSERT INTO custom_themes (id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`
     ).run(
       id,
       userId,
+      profileId,
       input.name,
       input.fontFamily,
       JSON.stringify(input.colors),
@@ -192,14 +196,16 @@ export const themeQueries = (db: Database) => ({
   },
 
   /**
-   * Set a theme as active (and deactivate all others for the user)
+   * Set a theme as active (and deactivate all others for the profile)
    */
   setActive(id: string): CustomTheme | null {
     const theme = this.getById(id);
     if (!theme) return null;
 
-    // Deactivate all themes for this user
-    db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE user_id = ?`).run(theme.userId);
+    // Deactivate all themes for this profile (if profile_id exists)
+    if (theme.userId) {
+      db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE user_id = ?`).run(theme.userId);
+    }
 
     // Activate the specified theme
     db.prepare(`UPDATE custom_themes SET is_active = 1 WHERE id = ?`).run(id);

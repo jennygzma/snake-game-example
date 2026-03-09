@@ -1,3 +1,4 @@
+import AccountCircle from "@mui/icons-material/AccountCircle";
 import BarChartRounded from "@mui/icons-material/BarChartRounded";
 import PauseRounded from "@mui/icons-material/PauseRounded";
 import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
@@ -7,6 +8,7 @@ import SportsEsportsRounded from "@mui/icons-material/SportsEsportsRounded";
 
 // Central approved icon registry. New icons must be added here only after user approval.
 export const approvedIcons = {
+  accountCircle: AccountCircle,
   barChart: BarChartRounded,
   pause: PauseRounded,
   play: PlayArrowRounded,
