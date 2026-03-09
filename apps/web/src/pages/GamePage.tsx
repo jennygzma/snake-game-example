@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Container, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
 import { ActionButton } from "../components/shared/ActionButton";
+import { PageLayout } from "../components/shared/PageLayout";
 import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { useKeyboard } from "../hooks/useKeyboard";
@@ -71,8 +72,7 @@ export const GamePage = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={2}>
+    <PageLayout maxWidth="lg" spacing={2}>
         <Typography variant="caption" color="text.secondary">
           Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
         </Typography>
@@ -153,7 +153,6 @@ export const GamePage = () => {
             </Panel>
           </Box>
         </Box>
-      </Stack>
-    </Container>
+    </PageLayout>
   );
 };

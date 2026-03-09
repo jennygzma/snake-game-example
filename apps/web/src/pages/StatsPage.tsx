@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { Container, Stack, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
 import { ScorePanel } from "../components/game/ScorePanel";
+import { PageLayout } from "../components/shared/PageLayout";
 import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { apiGameService } from "../services/adapters/apiGameService";
@@ -18,8 +19,7 @@ export const StatsPage = () => {
   const { game, player, highScore, leaderboard } = useGame(service);
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Stack spacing={3}>
+    <PageLayout maxWidth="md" spacing={3}>
         <Typography variant="h4">Game Statistics</Typography>
         
         <Panel>
@@ -34,7 +34,6 @@ export const StatsPage = () => {
         <Panel>
           <LeaderboardPanel entries={leaderboard} />
         </Panel>
-      </Stack>
-    </Container>
+    </PageLayout>
   );
 };

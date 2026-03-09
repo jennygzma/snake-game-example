@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Container, Stack, Typography, Box, Button } from "@mui/material";
-import type { CustomTheme } from "@snake/contracts";
+import { Typography, Box } from "@mui/material";
+import type { CustomTheme, SaveThemeInput } from "@snake/contracts";
+import { PageLayout } from "../components/shared/PageLayout";
 import { ThemeEditor } from "../components/settings/ThemeEditor";
 import { ThemeGallery } from "../components/settings/ThemeGallery";
 import { SaveThemeDialog } from "../components/settings/SaveThemeDialog";
@@ -20,9 +21,9 @@ export const SettingsPage = () => {
 
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [pendingThemeData, setPendingThemeData] = useState<any>(null);
+  const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
 
-  const handleSaveFromEditor = async (themeData: any) => {
+  const handleSaveFromEditor = async (themeData: SaveThemeInput) => {
     setPendingThemeData(themeData);
     setSaveDialogOpen(true);
   };
@@ -50,51 +51,53 @@ export const SettingsPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <PageLayout maxWidth="lg" spacing={1}>
         <Typography>Loading themes...</Typography>
-      </Container>
+      </PageLayout>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={4}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Settings
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Customize your game theme and colors
-          </Typography>
-        </Box>
+    <PageLayout maxWidth="lg" spacing={4}>
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          Settings
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Customize your game theme and colors
+        </Typography>
+      </Box>
 
-        {error && (
-          <Typography color="error" variant="body2">
-            {error}
-          </Typography>
-        )}
+      {error && (
+        <Typography color="error" variant="body2">
+          {error}
+        </Typography>
+      )}
 
-        <Box>
-          <ThemeEditor
-            theme={editingTheme || undefined}
-            onSave={handleSaveFromEditor}
-            onCancel={editingTheme ? handleCancelEdit : undefined}
-          />
-        </Box>
+      <Box>
+        <ThemeEditor
+          theme={editingTheme || undefined}
+          onSave={handleSaveFromEditor}
+          onCancel={editingTheme ? handleCancelEdit : undefined}
+        />
+      </Box>
 
-        <Box>
-          <Typography variant="h5" gutterBottom>
-            Saved Themes
-          </Typography>
-          <ThemeGallery
-            themes={themes}
-            activeThemeId={activeTheme?.id}
-            onActivate={async (id) => { await activateTheme(id); }}
-            onEdit={handleEdit}
-            onDelete={async (id) => { await deleteTheme(id); }}
-          />
-        </Box>
-      </Stack>
+      <Box>
+        <Typography variant="h5" gutterBottom>
+          Saved Themes
+        </Typography>
+        <ThemeGallery
+          themes={themes}
+          activeThemeId={activeTheme?.id}
+          onActivate={async (id) => {
+            await activateTheme(id);
+          }}
+          onEdit={handleEdit}
+          onDelete={async (id) => {
+            await deleteTheme(id);
+          }}
+        />
+      </Box>
 
       <SaveThemeDialog
         open={saveDialogOpen}
@@ -105,6 +108,6 @@ export const SettingsPage = () => {
         }}
         onSave={handleSaveTheme}
       />
-    </Container>
+    </PageLayout>
   );
 };

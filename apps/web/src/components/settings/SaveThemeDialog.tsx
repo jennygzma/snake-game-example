@@ -5,9 +5,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button,
   Box
 } from "@mui/material";
+import { AppButton } from "../shared/AppButton";
 
 interface SaveThemeDialogProps {
   open: boolean;
@@ -103,21 +103,24 @@ export const SaveThemeDialog = ({ open, initialName = "", onClose, onSave }: Sav
       </DialogContent>
 
       <DialogActions>
-        <Button
+        <AppButton
+          tone="neutral"
+          variant="text"
           onClick={onClose}
           disabled={saving}
           aria-label="Cancel save theme"
         >
           Cancel
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
+          tone="primary"
           onClick={handleSave}
           variant="contained"
           disabled={saving || !name.trim()}
           aria-label="Save theme"
         >
           {saving ? "Saving..." : "Save"}
-        </Button>
+        </AppButton>
       </DialogActions>
     </Dialog>
   );

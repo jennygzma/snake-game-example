@@ -1,7 +1,6 @@
-import { Box, Typography, Card, CardContent, CardActions, Button, Chip } from "@mui/material";
+import { Box, Typography, Card, CardContent, CardActions, Chip } from "@mui/material";
 import type { CustomTheme } from "@snake/contracts";
-import { Panel } from "../shared/Panel";
-import { ActionButton } from "../shared/ActionButton";
+import { AppButton } from "../shared/AppButton";
 
 interface ThemeGalleryProps {
   themes: CustomTheme[];
@@ -138,35 +137,38 @@ export const ThemeGallery = ({
 
             <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 1 }}>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Button 
+                <AppButton
                   size="small" 
                   variant="outlined"
+                  tone="neutral"
                   onClick={() => onEdit(theme)} 
                   aria-label={`Edit ${theme.name}`}
                   sx={{ fontWeight: 600 }}
                 >
                   Edit
-                </Button>
-                <Button
+                </AppButton>
+                <AppButton
                   size="small"
-                  color="error"
+                  tone="danger"
+                  variant="text"
                   onClick={() => onDelete(theme.id)}
                   disabled={isActive}
                   aria-label={`Delete ${theme.name}`}
                 >
                   Delete
-                </Button>
+                </AppButton>
               </Box>
               {!isActive && (
-                <Button
+                <AppButton
                   size="small"
                   variant="contained"
+                  tone="primary"
                   onClick={() => onActivate(theme.id)}
                   aria-label={`Activate ${theme.name}`}
                   sx={{ fontWeight: 600 }}
                 >
                   Activate
-                </Button>
+                </AppButton>
               )}
               {isActive && (
                 <Chip 

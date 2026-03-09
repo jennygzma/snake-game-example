@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import type { CustomTheme, SaveThemeInput } from "@snake/contracts";
+import { AppButton } from "../shared/AppButton";
+import { DEFAULT_THEME_DRAFT } from "../../theme/defaultThemeDraft";
 import { ColorPickerField } from "./ColorPickerField";
 import { FontPicker } from "./FontPicker";
 
@@ -11,37 +13,12 @@ interface ThemeEditorProps {
 }
 
 export const ThemeEditor = ({ theme, onSave, onCancel }: ThemeEditorProps) => {
-  const [fontFamily, setFontFamily] = useState(theme?.fontFamily || "Arial");
+  const [fontFamily, setFontFamily] = useState(theme?.fontFamily || DEFAULT_THEME_DRAFT.fontFamily);
   const [colors, setColors] = useState(
-    theme?.colors || {
-      bg: "#1a1a1a",
-      panel: "#2a2a2a",
-      panelBorder: "#3a3a3a",
-      text: "#ffffff",
-      textMuted: "#999999",
-      snake: "#87ae73",
-      snakeHead: "#6b8a5c",
-      food: "#9a4e4e",
-      boardGrid: "rgba(255,255,255,0.05)",
-      boardBg: "#0a0a0a",
-      action: "#87ae73",
-      actionHover: "#6b8a5c",
-      actionText: "#ffffff",
-      pause: "#FDB813",
-      pauseHover: "#e5a511",
-      pauseText: "#000000",
-      neutral: "#9e9e9e",
-      neutralHover: "#808080",
-      neutralText: "#ffffff",
-      danger: "#9a4e4e",
-      dangerHover: "#7a3e3e",
-      dangerText: "#ffffff"
-    }
+    theme?.colors || DEFAULT_THEME_DRAFT.colors
   );
   const [iconColors, setIconColors] = useState(
-    theme?.iconColors || {
-      default: "#ffffff"
-    }
+    theme?.iconColors || DEFAULT_THEME_DRAFT.iconColors
   );
 
   const [saving, setSaving] = useState(false);
@@ -228,13 +205,13 @@ export const ThemeEditor = ({ theme, onSave, onCancel }: ThemeEditorProps) => {
 
       <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "flex-end" }}>
         {onCancel && (
-          <Button onClick={onCancel} disabled={saving}>
+          <AppButton tone="neutral" variant="text" onClick={onCancel} disabled={saving}>
             Cancel
-          </Button>
+          </AppButton>
         )}
-        <Button variant="contained" onClick={handleSave} disabled={saving}>
+        <AppButton tone="primary" variant="contained" onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save Theme"}
-        </Button>
+        </AppButton>
       </Box>
     </Box>
   );
