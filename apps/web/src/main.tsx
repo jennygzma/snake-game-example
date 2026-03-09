@@ -3,10 +3,12 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { ThemeProvider, useAppTheme } from "./contexts/ThemeContext";
+import { ProfileProvider } from "./contexts/ProfileContext";
 import { AppShell } from "./components/shared/AppShell";
 import { GamePage } from "./pages/GamePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StatsPage } from "./pages/StatsPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 const AppContent = () => {
   const { theme } = useAppTheme();
@@ -20,6 +22,7 @@ const AppContent = () => {
             <Route path="/" element={<GamePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
@@ -30,9 +33,11 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <ProfileProvider mode="local">
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </ProfileProvider>
   );
 };
 

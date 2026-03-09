@@ -3,36 +3,24 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema,
   type GameSettings,
   type HighScoreResponse,
   type LeaderboardResponse,
-  type Profile,
   type RecentRunsResponse,
   type RunRecord,
   type RunRecordInput
 } from "@snake/contracts";
 import type { GameService } from "../gameService";
 
-const PROFILE_KEY = "snake.profile";
 const RUNS_KEY = "snake.runs";
 const SETTINGS_KEY = "snake.settings";
+const ACTIVE_PROFILE_ID_KEY = "snake.activeProfileId";
 
-const ensureProfile = (): Profile => {
-  const raw = localStorage.getItem(PROFILE_KEY);
-  if (raw) {
-    const parsed = profileSchema.safeParse(JSON.parse(raw));
-    if (parsed.success) {
-      return parsed.data;
-    }
-  }
-
-  const profile: Profile = { id: crypto.randomUUID(), name: "Player" };
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  return profile;
+const getActiveProfileId = (): string => {
+  return localStorage.getItem(ACTIVE_PROFILE_ID_KEY) || "default";
 };
 
 const readRuns = (): RunRecord[] => {
@@ -51,10 +39,6 @@ const writeRuns = (runs: RunRecord[]): void => {
 };
 
 export const localGameService: GameService = {
-  async getProfile() {
-    return ensureProfile();
-  },
-
   async getHighScore() {
     const highScore = readRuns().reduce((best, run) => Math.max(best, run.score), 0);
     return highScoreResponseSchema.parse({ highScore }) satisfies HighScoreResponse;
@@ -67,6 +51,7 @@ export const localGameService: GameService = {
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: "Local Player",
         score: run.score,
         endedAt: run.endedAt
       }));
@@ -76,10 +61,10 @@ export const localGameService: GameService = {
 
   async saveRun(run: RunRecordInput) {
     const input = runRecordInputSchema.parse(run);
-    const profile = ensureProfile();
+    const activeProfileId = getActiveProfileId();
     const nextRun = runRecordSchema.parse({
       id: crypto.randomUUID(),
-      userId: profile.id,
+      userId: activeProfileId,
       ...input
     });
 

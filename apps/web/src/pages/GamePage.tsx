@@ -19,7 +19,7 @@ const resolveService = (): GameService => {
 
 export const GamePage = () => {
   const service = useMemo(resolveService, []);
-  const { game, settings, player, highScore, leaderboard, error, startGame, resetGame, togglePause, turn } =
+  const { game, settings, highScore, leaderboard, error, startGame, resetGame, togglePause, turn } =
     useGame(service);
   const serviceMode = import.meta.env.VITE_GAME_SERVICE_MODE === "local" ? "local" : "api";
   const pauseLabel = game.status === "paused" ? "Resume" : "Pause";

@@ -2,14 +2,12 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema,
   type GameSettings,
   type HighScoreResponse,
   type LeaderboardResponse,
-  type Profile,
   type RecentRunsResponse,
   type RunRecord,
   type RunRecordInput
@@ -37,10 +35,6 @@ const request = async <T>(path: string, schema: ZodType<T>, init?: RequestInit):
 };
 
 export const apiGameService: GameService = {
-  getProfile() {
-    return request<Profile>("/v1/profile", profileSchema);
-  },
-
   getHighScore() {
     return request<HighScoreResponse>("/v1/scores/high", highScoreResponseSchema);
   },
