@@ -30,3 +30,6 @@ Thumbs.db
 # Local tooling data
 .zoro/
 .clinerules/
+
+# Local runtime database
+apps/api/data/snake.db
