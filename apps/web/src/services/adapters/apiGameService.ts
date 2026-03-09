@@ -52,6 +52,13 @@ export const apiGameService: GameService = {
     );
   },
 
+  getLeaderboardGlobal(limit: number) {
+    return request<LeaderboardResponse>(
+      `/v1/leaderboard/global?limit=${Math.max(1, limit)}`,
+      leaderboardResponseSchema
+    );
+  },
+
   saveRun(run: RunRecordInput) {
     const payload = runRecordInputSchema.parse(run);
     return request<RunRecord>("/v1/runs", runRecordSchema, {

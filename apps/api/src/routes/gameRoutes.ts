@@ -33,6 +33,12 @@ gameRouter.get("/leaderboard", (req, res) => {
   res.json(payload);
 });
 
+gameRouter.get("/leaderboard/global", (req, res) => {
+  const limit = asNumber(req.query.limit, 10);
+  const payload = leaderboardResponseSchema.parse(gameDataService.getLeaderboardGlobal(limit));
+  res.json(payload);
+});
+
 gameRouter.post("/runs", (req, res) => {
   const parsedBody = runRecordInputSchema.safeParse(req.body);
   if (!parsedBody.success) {

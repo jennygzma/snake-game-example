@@ -3,19 +3,19 @@ import type { CustomTheme, SaveThemeInput, ThemeColors, ThemeIconColors } from "
 
 export const themeQueries = (db: Database) => ({
   /**
-   * List all themes for a user
+   * List all themes for a profile
    */
   listByUserId(userId: string): CustomTheme[] {
     const rows = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
-         WHERE user_id = ?
+         WHERE profile_id = ?
          ORDER BY created_at DESC`
       )
       .all(userId) as Array<{
       id: string;
-      user_id: string;
+      profile_id: string;
       name: string;
       font_family: string;
       colors: string;
@@ -27,7 +27,7 @@ export const themeQueries = (db: Database) => ({
 
     return rows.map((row) => ({
       id: row.id,
-      userId: row.user_id,
+      userId: row.profile_id,
       name: row.name,
       fontFamily: row.font_family,
       colors: JSON.parse(row.colors) as ThemeColors,
@@ -44,14 +44,14 @@ export const themeQueries = (db: Database) => ({
   getById(id: string): CustomTheme | null {
     const row = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
          WHERE id = ?`
       )
       .get(id) as
       | {
           id: string;
-          user_id: string;
+          profile_id: string;
           name: string;
           font_family: string;
           colors: string;
@@ -66,7 +66,7 @@ export const themeQueries = (db: Database) => ({
 
     return {
       id: row.id,
-      userId: row.user_id,
+      userId: row.profile_id,
       name: row.name,
       fontFamily: row.font_family,
       colors: JSON.parse(row.colors) as ThemeColors,
@@ -78,20 +78,20 @@ export const themeQueries = (db: Database) => ({
   },
 
   /**
-   * Get the active theme for a user
+   * Get the active theme for a profile
    */
   getActive(userId: string): CustomTheme | null {
     const row = db
       .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+        `SELECT id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
-         WHERE user_id = ? AND is_active = 1
+         WHERE profile_id = ? AND is_active = 1
          LIMIT 1`
       )
       .get(userId) as
       | {
           id: string;
-          user_id: string;
+          profile_id: string;
           name: string;
           font_family: string;
           colors: string;
@@ -106,7 +106,7 @@ export const themeQueries = (db: Database) => ({
 
     return {
       id: row.id,
-      userId: row.user_id,
+      userId: row.profile_id,
       name: row.name,
       fontFamily: row.font_family,
       colors: JSON.parse(row.colors) as ThemeColors,
@@ -125,7 +125,7 @@ export const themeQueries = (db: Database) => ({
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO custom_themes (id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
+      `INSERT INTO custom_themes (id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
     ).run(
       id,
@@ -198,8 +198,8 @@ export const themeQueries = (db: Database) => ({
     const theme = this.getById(id);
     if (!theme) return null;
 
-    // Deactivate all themes for this user
-    db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE user_id = ?`).run(theme.userId);
+    // Deactivate all themes for this profile
+    db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE profile_id = ?`).run(theme.userId);
 
     // Activate the specified theme
     db.prepare(`UPDATE custom_themes SET is_active = 1 WHERE id = ?`).run(id);
