@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Button, type ButtonProps, useMediaQuery, useTheme } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
-import { gameTokens } from "../../theme/tokens";
 
 type ActionTone = "play" | "pause" | "neutral" | "danger";
 
@@ -10,29 +9,6 @@ type ActionButtonProps = Omit<ButtonProps, "color" | "variant" | "startIcon"> & 
   icon?: ReactNode;
   responsiveIconOnly?: boolean;
   iconOnly?: boolean;
-};
-
-const toneStyles: Record<ActionTone, SxProps<Theme>> = {
-  play: {
-    bgcolor: gameTokens.colors.action,
-    color: gameTokens.colors.actionText,
-    "&:hover": { bgcolor: gameTokens.colors.actionHover }
-  },
-  pause: {
-    bgcolor: gameTokens.colors.pause,
-    color: gameTokens.colors.pauseText,
-    "&:hover": { bgcolor: gameTokens.colors.pauseHover }
-  },
-  neutral: {
-    bgcolor: gameTokens.colors.neutral,
-    color: gameTokens.colors.neutralText,
-    "&:hover": { bgcolor: gameTokens.colors.neutralHover }
-  },
-  danger: {
-    bgcolor: gameTokens.colors.danger,
-    color: gameTokens.colors.dangerText,
-    "&:hover": { bgcolor: gameTokens.colors.dangerHover }
-  }
 };
 
 export const ActionButton = ({
@@ -49,6 +25,30 @@ export const ActionButton = ({
   const isIconOnly = Boolean(icon) && (iconOnly || (responsiveIconOnly && isSmallScreen));
   const label = typeof children === "string" ? children : undefined;
   const accessibleLabel = props["aria-label"] ?? label;
+
+  // Dynamic tone styles based on current theme
+  const toneStyles: Record<ActionTone, SxProps<Theme>> = {
+    play: {
+      bgcolor: theme.game.action,
+      color: theme.game.actionText,
+      "&:hover": { bgcolor: theme.game.actionHover }
+    },
+    pause: {
+      bgcolor: theme.game.pause,
+      color: theme.game.pauseText,
+      "&:hover": { bgcolor: theme.game.pauseHover }
+    },
+    neutral: {
+      bgcolor: theme.game.neutral,
+      color: theme.game.neutralText,
+      "&:hover": { bgcolor: theme.game.neutralHover }
+    },
+    danger: {
+      bgcolor: theme.game.danger,
+      color: theme.game.dangerText,
+      "&:hover": { bgcolor: theme.game.dangerHover }
+    }
+  };
 
   if (import.meta.env.DEV && isIconOnly && !accessibleLabel) {
     // Icon-only controls need a text label for assistive technologies.
@@ -68,8 +68,7 @@ export const ActionButton = ({
           minHeight: 52,
           minWidth: isIconOnly ? 52 : undefined,
           px: isIconOnly ? 0 : 2.25,
-          borderRadius: `${gameTokens.radius.md}px`,
-          boxShadow: gameTokens.shadow.inset,
+          borderRadius: 1,
           fontWeight: 700
         },
         toneStyles[tone],

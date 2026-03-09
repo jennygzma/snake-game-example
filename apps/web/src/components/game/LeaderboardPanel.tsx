@@ -9,9 +9,10 @@ const formatEndedAt = (value: string): string => {
 
 type LeaderboardPanelProps = {
   entries: LeaderboardEntry[];
+  showProfileName?: boolean;
 };
 
-export const LeaderboardPanel = ({ entries }: LeaderboardPanelProps) => {
+export const LeaderboardPanel = ({ entries, showProfileName = false }: LeaderboardPanelProps) => {
   return (
     <Stack spacing={1}>
       <Typography variant="h6">Leaderboard</Typography>
@@ -26,14 +27,20 @@ export const LeaderboardPanel = ({ entries }: LeaderboardPanelProps) => {
               key={`${entry.rank}-${entry.userId}-${entry.endedAt}`}
               sx={{
                 display: "grid",
-                gridTemplateColumns: "48px 1fr auto",
+                gridTemplateColumns: showProfileName ? "48px 1fr 1fr auto" : "48px 1fr auto",
                 alignItems: "center",
+                gap: 1,
                 py: 1
               }}
             >
               <Typography variant="body2" color="text.secondary">
                 #{entry.rank}
               </Typography>
+              {showProfileName && (
+                <Typography variant="body2" color="text.secondary">
+                  {entry.profileName}
+                </Typography>
+              )}
               <Typography variant="body2">{entry.score} pts</Typography>
               <Typography variant="caption" color="text.secondary">
                 {formatEndedAt(entry.endedAt)}

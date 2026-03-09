@@ -18,7 +18,11 @@ type Store = {
 const store: Store = {
   profile: {
     id: "dev-user-1",
-    name: "Player"
+    name: "Player",
+    avatarBase64: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isActive: true
   },
   settings: DEFAULT_SETTINGS,
   runs: [
@@ -56,11 +60,18 @@ export const gameDataService = {
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: store.profile.name, // In-memory store only has one profile
         score: run.score,
         endedAt: run.endedAt
       }));
 
     return { entries };
+  },
+
+  getLeaderboardGlobal(limit: number): LeaderboardResponse {
+    // In the in-memory store, this is the same as regular leaderboard
+    // since we only have one profile. In a real DB, this would join with profiles table.
+    return this.getLeaderboard(limit);
   },
 
   saveRun(input: RunRecordInput): RunRecord {
