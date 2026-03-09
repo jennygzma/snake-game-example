@@ -3,8 +3,12 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ScorePanel } from "./ScorePanel";
 
 const demoPlayer: Profile = {
-  id: "player-1",
-  name: "Jenny"
+  id: "test-player",
+  name: "Test Player",
+  avatarBase64: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  isActive: true
 };
 
 const meta = {

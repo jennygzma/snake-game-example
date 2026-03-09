@@ -2,7 +2,7 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
+  ProfileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema,
@@ -18,9 +18,28 @@ import type { ZodType } from "zod";
 import type { GameService } from "../gameService";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const REQUEST_TIMEOUT_MS = 5000;
+
+const fetchWithTimeout = async (url: string, init?: RequestInit): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const request = async <T>(path: string, schema: ZodType<T>, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {})
@@ -38,7 +57,7 @@ const request = async <T>(path: string, schema: ZodType<T>, init?: RequestInit):
 
 export const apiGameService: GameService = {
   getProfile() {
-    return request<Profile>("/v1/profile", profileSchema);
+    return request<Profile>("/v1/profile", ProfileSchema);
   },
 
   getHighScore() {

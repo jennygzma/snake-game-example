@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Typography } from "@mui/material";
+import { useMemo, useState } from "react";
+import { Typography, Tabs, Tab, Box } from "@mui/material";
 import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
 import { ScorePanel } from "../components/game/ScorePanel";
 import { PageLayout } from "../components/shared/PageLayout";
@@ -17,23 +17,35 @@ const resolveService = (): GameService => {
 export const StatsPage = () => {
   const service = useMemo(resolveService, []);
   const { game, player, highScore, leaderboard } = useGame(service);
+  const [activeTab, setActiveTab] = useState(0);
 
   return (
     <PageLayout maxWidth="md" spacing={3}>
-        <Typography variant="h4">Game Statistics</Typography>
-        
-        <Panel>
-          <ScorePanel
-            player={player}
-            score={game.score}
-            highScore={highScore}
-            status={game.status}
-          />
-        </Panel>
+      <Typography variant="h4">Game Statistics</Typography>
 
-        <Panel>
-          <LeaderboardPanel entries={leaderboard} />
-        </Panel>
+      <Panel>
+        <ScorePanel
+          player={player}
+          score={game.score}
+          highScore={highScore}
+          status={game.status}
+        />
+      </Panel>
+
+      <Panel>
+        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
+          <Tab label="My Scores" />
+          <Tab label="All Profiles" />
+        </Tabs>
+
+        <Box role="tabpanel" hidden={activeTab !== 0}>
+          {activeTab === 0 && <LeaderboardPanel entries={leaderboard} showProfileName={false} />}
+        </Box>
+
+        <Box role="tabpanel" hidden={activeTab !== 1}>
+          {activeTab === 1 && <LeaderboardPanel entries={leaderboard} showProfileName={true} />}
+        </Box>
+      </Panel>
     </PageLayout>
   );
 };

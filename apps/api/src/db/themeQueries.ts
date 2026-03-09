@@ -3,17 +3,20 @@ import type { CustomTheme, SaveThemeInput, ThemeColors, ThemeIconColors } from "
 
 export const themeQueries = (db: Database) => ({
   /**
-   * List all themes for a user
+   * List all themes for a user and profile
    */
-  listByUserId(userId: string): CustomTheme[] {
-    const rows = db
-      .prepare(
-        `SELECT id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+  listByUserId(userId: string, profileId?: string): CustomTheme[] {
+    const query = profileId
+      ? `SELECT id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
+         FROM custom_themes
+         WHERE user_id = ? AND profile_id = ?
+         ORDER BY created_at DESC`
+      : `SELECT id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active
          FROM custom_themes
          WHERE user_id = ?
-         ORDER BY created_at DESC`
-      )
-      .all(userId) as Array<{
+         ORDER BY created_at DESC`;
+    
+    const rows = (profileId ? db.prepare(query).all(userId, profileId) : db.prepare(query).all(userId)) as Array<{
       id: string;
       user_id: string;
       name: string;
@@ -120,16 +123,17 @@ export const themeQueries = (db: Database) => ({
   /**
    * Create a new theme
    */
-  create(userId: string, input: SaveThemeInput): CustomTheme {
+  create(userId: string, input: SaveThemeInput, profileId?: string): CustomTheme {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO custom_themes (id, user_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
+      `INSERT INTO custom_themes (id, user_id, profile_id, name, font_family, colors, icon_colors, created_at, updated_at, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`
     ).run(
       id,
       userId,
+      profileId ?? null,
       input.name,
       input.fontFamily,
       JSON.stringify(input.colors),

@@ -3,7 +3,7 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
+  ProfileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema,
@@ -24,13 +24,20 @@ const SETTINGS_KEY = "snake.settings";
 const ensureProfile = (): Profile => {
   const raw = localStorage.getItem(PROFILE_KEY);
   if (raw) {
-    const parsed = profileSchema.safeParse(JSON.parse(raw));
+    const parsed = ProfileSchema.safeParse(JSON.parse(raw));
     if (parsed.success) {
       return parsed.data;
     }
   }
 
-  const profile: Profile = { id: crypto.randomUUID(), name: "Player" };
+  const profile: Profile = {
+    id: crypto.randomUUID(),
+    name: "Player",
+    avatarBase64: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isActive: true
+  };
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
   return profile;
 };
@@ -61,12 +68,14 @@ export const localGameService: GameService = {
   },
 
   async getLeaderboard(limit: number) {
+    const profile = ensureProfile();
     const entries = readRuns()
       .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
       .slice(0, Math.max(1, limit))
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: profile.name,
         score: run.score,
         endedAt: run.endedAt
       }));

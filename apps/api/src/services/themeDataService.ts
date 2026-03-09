@@ -13,10 +13,10 @@ export const createThemeDataService = (db: Database) => {
 
   return {
     /**
-     * List all themes for a user
+     * List all themes for a user (optionally filtered by profile)
      */
-    listThemes(userId: string): ThemesListResponse {
-      const themes = queries.listByUserId(userId);
+    listThemes(userId: string, profileId?: string): ThemesListResponse {
+      const themes = queries.listByUserId(userId, profileId);
       return { themes };
     },
 
@@ -40,8 +40,8 @@ export const createThemeDataService = (db: Database) => {
     /**
      * Create a new theme
      */
-    createTheme(userId: string, input: SaveThemeInput): ThemeResponse {
-      const theme = queries.create(userId, input);
+    createTheme(userId: string, input: SaveThemeInput, profileId?: string): ThemeResponse {
+      const theme = queries.create(userId, input, profileId);
       return { theme };
     },
 
