@@ -3,23 +3,18 @@ import {
   type GameSettings,
   type HighScoreResponse,
   type LeaderboardResponse,
-  type Profile,
   type RecentRunsResponse,
   type RunRecord,
   type RunRecordInput
 } from "@snake/contracts";
+import { profileQueries } from "../db/profileQueries";
 
 type Store = {
-  profile: Profile;
   settings: GameSettings;
   runs: RunRecord[];
 };
 
 const store: Store = {
-  profile: {
-    id: "dev-user-1",
-    name: "Player"
-  },
   settings: DEFAULT_SETTINGS,
   runs: [
     {
@@ -40,10 +35,6 @@ const store: Store = {
 };
 
 export const gameDataService = {
-  getProfile(): Profile {
-    return store.profile;
-  },
-
   getHighScore(): HighScoreResponse {
     const highScore = store.runs.reduce((best, run) => Math.max(best, run.score), 0);
     return { highScore };
@@ -53,20 +44,27 @@ export const gameDataService = {
     const entries = [...store.runs]
       .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
       .slice(0, Math.max(1, limit))
-      .map((run, index) => ({
-        rank: index + 1,
-        userId: run.userId,
-        score: run.score,
-        endedAt: run.endedAt
-      }));
+      .map((run, index) => {
+        const profile = profileQueries.getProfile(run.userId);
+        return {
+          rank: index + 1,
+          userId: run.userId,
+          profileName: profile?.name || "Unknown",
+          score: run.score,
+          endedAt: run.endedAt
+        };
+      });
 
     return { entries };
   },
 
   saveRun(input: RunRecordInput): RunRecord {
+    const activeProfile = profileQueries.getActiveProfile();
+    const userId = activeProfile?.id || "unknown";
+    
     const run: RunRecord = {
       id: crypto.randomUUID(),
-      userId: store.profile.id,
+      userId,
       ...input
     };
 

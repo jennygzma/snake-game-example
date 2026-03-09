@@ -3,7 +3,6 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema
@@ -16,11 +15,6 @@ const asNumber = (value: unknown, fallback: number): number => {
 };
 
 export const gameRouter = Router();
-
-gameRouter.get("/profile", (_req, res) => {
-  const payload = profileSchema.parse(gameDataService.getProfile());
-  res.json(payload);
-});
 
 gameRouter.get("/scores/high", (_req, res) => {
   const payload = highScoreResponseSchema.parse(gameDataService.getHighScore());

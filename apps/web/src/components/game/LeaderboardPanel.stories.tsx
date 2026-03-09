@@ -6,12 +6,14 @@ const entries: LeaderboardEntry[] = [
   {
     rank: 1,
     userId: "u-1",
+    profileName: "Player 1",
     score: 42,
     endedAt: "2026-03-08T12:00:00.000Z"
   },
   {
     rank: 2,
     userId: "u-2",
+    profileName: "Player 2",
     score: 37,
     endedAt: "2026-03-07T12:00:00.000Z"
   }

@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_SETTINGS,
   type GameSettings,
-  type LeaderboardEntry,
-  type Profile
+  type LeaderboardEntry
 } from "@snake/contracts";
 import { createInitialState, setDirection, stepGame } from "../engine/gameEngine";
 import { useGameLoop } from "./useGameLoop";
@@ -13,7 +12,6 @@ import type { GameService } from "../services/gameService";
 type UseGameResult = {
   game: GameState;
   settings: GameSettings;
-  player: Profile | null;
   highScore: number;
   leaderboard: LeaderboardEntry[];
   error: string | null;
@@ -26,7 +24,6 @@ type UseGameResult = {
 export const useGame = (service: GameService): UseGameResult => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [game, setGame] = useState<GameState>(() => createInitialState(DEFAULT_SETTINGS));
-  const [player, setPlayer] = useState<Profile | null>(null);
   const [highScore, setHighScore] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -36,14 +33,12 @@ export const useGame = (service: GameService): UseGameResult => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [profile, highScoreResponse, loadedSettings, leaderboardResponse] = await Promise.all([
-          service.getProfile(),
+        const [highScoreResponse, loadedSettings, leaderboardResponse] = await Promise.all([
           service.getHighScore(),
           service.getSettings(),
           service.getLeaderboard(10)
         ]);
 
-        setPlayer(profile);
         setHighScore(highScoreResponse.highScore);
         setLeaderboard(leaderboardResponse.entries);
         setSettings(loadedSettings);
@@ -127,7 +122,6 @@ export const useGame = (service: GameService): UseGameResult => {
     () => ({
       game,
       settings,
-      player,
       highScore,
       leaderboard,
       error,
@@ -136,7 +130,7 @@ export const useGame = (service: GameService): UseGameResult => {
       togglePause,
       turn
     }),
-    [error, game, highScore, leaderboard, player, resetGame, settings, startGame, togglePause, turn]
+    [error, game, highScore, leaderboard, resetGame, settings, startGame, togglePause, turn]
   );
 
   return result;
