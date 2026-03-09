@@ -3,11 +3,11 @@ import { ThemeProvider } from "@mui/material";
 import { render } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
-import { appTheme } from "../../theme/theme";
-import { GameBoard } from "./GameBoard";
-import { GameOverScreen } from "./GameOverScreen";
-import { LeaderboardPanel } from "./LeaderboardPanel";
-import { ScorePanel } from "./ScorePanel";
+import { appTheme } from "../../../theme/theme";
+import { GameBoard } from "../GameBoard";
+import { GameOverScreen } from "../GameOverScreen";
+import { LeaderboardPanel } from "../LeaderboardPanel";
+import { ScorePanel } from "../ScorePanel";
 
 const demoPlayer: Profile = {
   id: "test-player-1",

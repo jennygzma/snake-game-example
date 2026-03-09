@@ -1,6 +1,6 @@
 import type { LeaderboardEntry } from "@snake/contracts";
 import type { Meta, StoryObj } from "@storybook/react";
-import { LeaderboardPanel } from "./LeaderboardPanel";
+import { LeaderboardPanel } from "../LeaderboardPanel";
 
 const entries: LeaderboardEntry[] = [
   {
