@@ -1,0 +1,5 @@
+# Treat docs and lockfiles as generated artifacts for review UX.
+# This keeps them commit-able, but de-emphasized in diffs/PRs.
+docs/** linguist-generated=true -diff
+package-lock.json linguist-generated=true -diff
+**/package-lock.json linguist-generated=true -diff
