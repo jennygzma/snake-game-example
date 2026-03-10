@@ -9,8 +9,10 @@ import {
   Typography,
   Box
 } from "@mui/material";
-import { Warning } from "@mui/icons-material";
 import type { Profile } from "@snake/contracts";
+import { approvedIcons } from "../../theme/approvedIcons";
+
+const WarningIcon = approvedIcons.warning;
 
 interface DeleteProfileDialogProps {
   open: boolean;
@@ -53,7 +55,7 @@ export const DeleteProfileDialog = ({ open, profile, onClose, onDelete }: Delete
     >
       <DialogTitle id="delete-profile-dialog-title">
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Warning color="error" />
+          <WarningIcon color="error" />
           <span>Delete Profile?</span>
         </Box>
       </DialogTitle>

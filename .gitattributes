@@ -1,0 +1,8 @@
+# Treat docs/data and lockfiles as generated artifacts for review UX.
+# This keeps them commit-able, but de-emphasized in diffs/PRs.
+docs/** linguist-generated=true -diff
+data/** linguist-generated=true -diff
+package-lock.json linguist-generated=true -diff
+**/package-lock.json linguist-generated=true -diff
+apps/web/package.json linguist-generated=true -diff
+apps/web/tsconfig.json linguist-generated=true -diff

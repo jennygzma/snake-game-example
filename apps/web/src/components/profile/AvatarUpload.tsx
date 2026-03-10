@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { Box, Button, Avatar, Typography, IconButton } from "@mui/material";
-import { PhotoCamera, Delete } from "@mui/icons-material";
 import { approvedIcons } from "../../theme/approvedIcons";
 
 const AccountCircleIcon = approvedIcons.accountCircle;
+const PhotoCameraIcon = approvedIcons.photoCamera;
+const DeleteIcon = approvedIcons.delete;
 
 interface AvatarUploadProps {
   currentAvatar: string | null;
@@ -120,7 +121,7 @@ export const AvatarUpload = ({ currentAvatar, onAvatarChange }: AvatarUploadProp
         />
         <Button
           variant="outlined"
-          startIcon={<PhotoCamera />}
+          startIcon={<PhotoCameraIcon />}
           onClick={() => fileInputRef.current?.click()}
         >
           {preview ? "Change" : "Upload"}
@@ -132,7 +133,7 @@ export const AvatarUpload = ({ currentAvatar, onAvatarChange }: AvatarUploadProp
             aria-label="Remove avatar"
             size="small"
           >
-            <Delete />
+            <DeleteIcon />
           </IconButton>
         )}
       </Box>

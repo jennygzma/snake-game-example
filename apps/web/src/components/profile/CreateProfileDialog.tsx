@@ -70,11 +70,15 @@ export const CreateProfileDialog = ({ open, onClose, onCreate }: CreateProfileDi
       maxWidth="sm"
       fullWidth
       aria-labelledby="create-profile-dialog-title"
+      aria-describedby="create-profile-dialog-description"
     >
       <form onSubmit={handleSubmit}>
         <DialogTitle id="create-profile-dialog-title">Create Profile</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 3 }}>
+            <Box id="create-profile-dialog-description" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
+              Create a new profile name and optional avatar.
+            </Box>
             <AvatarUpload currentAvatar={avatarBase64} onAvatarChange={setAvatarBase64} />
             <TextField
               autoFocus
