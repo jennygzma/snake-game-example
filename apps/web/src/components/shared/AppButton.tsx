@@ -3,7 +3,7 @@ import { Button, useTheme } from "@mui/material";
 
 type AppButtonTone = "primary" | "neutral" | "danger";
 
-type AppButtonProps = Omit<ButtonProps, "color"> & {
+export type AppButtonProps = Omit<ButtonProps, "color"> & {
   tone?: AppButtonTone;
 };
 

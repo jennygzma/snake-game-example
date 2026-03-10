@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button, type ButtonProps, useMediaQuery, useTheme } from "@mui/material";
+import { Button, Tooltip, type ButtonProps, useMediaQuery, useTheme } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 
 type ActionTone = "play" | "pause" | "neutral" | "danger";
@@ -56,7 +56,7 @@ export const ActionButton = ({
     console.warn("ActionButton: icon-only mode requires children text or aria-label.");
   }
 
-  return (
+  const content = (
     <Button
       variant="contained"
       size="large"
@@ -78,5 +78,13 @@ export const ActionButton = ({
     >
       {isIconOnly ? icon : children}
     </Button>
+  );
+
+  if (!isIconOnly || !accessibleLabel) return content;
+
+  return (
+    <Tooltip title={accessibleLabel} arrow>
+      <span>{content}</span>
+    </Tooltip>
   );
 };

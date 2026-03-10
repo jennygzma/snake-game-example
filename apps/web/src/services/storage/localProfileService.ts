@@ -14,6 +14,9 @@ import {
 import type { ProfileService } from "../profileService";
 
 const PROFILES_KEY = "snake.profiles";
+const THEMES_KEY = "snake.themes";
+const RUNS_KEY = "snake.runs";
+const SETTINGS_BY_PROFILE_KEY = "snake.settings.by_profile";
 
 const readProfiles = (): Profile[] => {
   const raw = localStorage.getItem(PROFILES_KEY);
@@ -101,6 +104,7 @@ export const localProfileService: ProfileService = {
 
   async deleteProfile(profileId: string) {
     const profiles = readProfiles();
+    const deletedProfile = profiles.find((p) => p.id === profileId);
     const filtered = profiles.filter((p) => p.id !== profileId);
 
     if (filtered.length === profiles.length) {
@@ -108,7 +112,68 @@ export const localProfileService: ProfileService = {
       return false;
     }
 
-    writeProfiles(filtered);
+    // Keep exactly one active profile when profiles remain.
+    const hasActive = filtered.some((profile) => profile.isActive);
+    const nextProfiles =
+      filtered.length > 0 && !hasActive
+        ? filtered.map((profile, index) => ({
+            ...profile,
+            isActive: index === 0
+          }))
+        : filtered;
+
+    writeProfiles(nextProfiles);
+
+    // Cascade delete profile-scoped themes.
+    const rawThemes = localStorage.getItem(THEMES_KEY);
+    if (rawThemes) {
+      try {
+        const parsed = JSON.parse(rawThemes);
+        if (Array.isArray(parsed)) {
+          const nextThemes = parsed.filter((theme) => theme?.userId !== profileId);
+          localStorage.setItem(THEMES_KEY, JSON.stringify(nextThemes));
+        }
+      } catch {
+        // ignore malformed local cache
+      }
+    }
+
+    // Cascade delete profile-scoped runs.
+    const rawRuns = localStorage.getItem(RUNS_KEY);
+    if (rawRuns) {
+      try {
+        const parsed = JSON.parse(rawRuns);
+        if (Array.isArray(parsed)) {
+          const nextRuns = parsed.filter((run) => run?.userId !== profileId);
+          localStorage.setItem(RUNS_KEY, JSON.stringify(nextRuns));
+        }
+      } catch {
+        // ignore malformed local cache
+      }
+    }
+
+    // Cascade delete profile-scoped settings.
+    const rawSettingsByProfile = localStorage.getItem(SETTINGS_BY_PROFILE_KEY);
+    if (rawSettingsByProfile) {
+      try {
+        const parsed = JSON.parse(rawSettingsByProfile);
+        if (parsed && typeof parsed === "object") {
+          delete parsed[profileId];
+          localStorage.setItem(SETTINGS_BY_PROFILE_KEY, JSON.stringify(parsed));
+        }
+      } catch {
+        // ignore malformed local cache
+      }
+    }
+
+    // Keep behavior deterministic if active profile was deleted and next exists.
+    if (deletedProfile?.isActive && nextProfiles.length > 0 && !nextProfiles.some((p) => p.isActive)) {
+      const [first] = nextProfiles;
+      if (first) {
+        const normalized = nextProfiles.map((p) => ({ ...p, isActive: p.id === first.id }));
+        writeProfiles(normalized);
+      }
+    }
     return true;
   },
 

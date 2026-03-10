@@ -1,11 +1,10 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { AppBar, Box, Container, Toolbar, useTheme, IconButton, Avatar, Typography } from "@mui/material";
+import { AppBar, Box, Container, Toolbar, useTheme, IconButton, Typography } from "@mui/material";
 import { approvedIcons } from "../../theme/approvedIcons";
 import { NavIconButton } from "./NavIconButton";
 import { useProfile } from "../../hooks/useProfile";
-
-const AccountCircleIcon = approvedIcons.accountCircle;
+import { ProfileAvatar } from "./ProfileAvatar";
 
 interface AppShellProps {
   children: ReactNode;
@@ -19,7 +18,17 @@ export const AppShell = ({ children }: AppShellProps) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <AppBar position="static" color="default" elevation={1}>
+      <AppBar
+        position="static"
+        color="transparent"
+        elevation={0}
+        sx={{
+          bgcolor: theme.ui.nav.topBarBg,
+          borderBottom: "1px solid",
+          borderColor: theme.ui.nav.topBarBorder,
+          boxShadow: theme.ui.nav.topBarShadow
+        }}
+      >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ gap: 1 }}>
             <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1 }}>
@@ -28,20 +37,23 @@ export const AppShell = ({ children }: AppShellProps) => {
                 active={location.pathname === "/"}
                 onClick={() => navigate("/")}
                 icon={<approvedIcons.sportsEsports />}
-                inactiveColor={theme.icons.default}
+                activeColor={theme.icons.gameActive ?? theme.icons.active ?? theme.ui.nav.iconActiveColor}
+                inactiveColor={theme.icons.sportsEsports || theme.icons.play || theme.icons.default}
               />
               <NavIconButton
                 label="Statistics"
                 active={location.pathname === "/stats"}
                 onClick={() => navigate("/stats")}
                 icon={<approvedIcons.barChart />}
-                inactiveColor={theme.icons.stats || theme.icons.default}
+                activeColor={theme.icons.statsActive ?? theme.icons.active ?? theme.ui.nav.iconActiveColor}
+                inactiveColor={theme.icons.barChart || theme.icons.stats || theme.icons.default}
               />
               <NavIconButton
                 label="Settings"
                 active={location.pathname === "/settings"}
                 onClick={() => navigate("/settings")}
                 icon={<approvedIcons.settings />}
+                activeColor={theme.icons.settingsActive ?? theme.icons.active ?? theme.ui.nav.iconActiveColor}
                 inactiveColor={theme.icons.settings || theme.icons.default}
               />
               {activeProfile && (
@@ -54,25 +66,22 @@ export const AppShell = ({ children }: AppShellProps) => {
                     borderRadius: 2,
                     px: 1.5,
                     "&:hover": {
-                      bgcolor: "action.hover"
+                      bgcolor: theme.ui.nav.profileHoverBg
                     }
                   }}
                   aria-label="View profile"
                 >
-                  <Avatar
+                  <ProfileAvatar
                     src={activeProfile.avatarBase64 || undefined}
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      bgcolor: "primary.main"
-                    }}
-                  >
-                    {!activeProfile.avatarBase64 && <AccountCircleIcon sx={{ width: 24, height: 24 }} />}
-                  </Avatar>
+                    size={32}
+                    iconSize={24}
+                    bgColor={theme.ui.nav.profileAvatarBg}
+                  />
                   <Typography
                     variant="body2"
                     sx={{
                       fontWeight: 600,
+                      color: theme.ui.nav.profileNameText,
                       display: { xs: "none", sm: "block" }
                     }}
                   >

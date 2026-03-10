@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
-import { Box, Button, Avatar, Typography, IconButton } from "@mui/material";
+import { Box, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { approvedIcons } from "../../theme/approvedIcons";
+import { IconActionButton } from "../shared/IconActionButton";
+import { ProfileAvatar } from "../shared/ProfileAvatar";
 
-const AccountCircleIcon = approvedIcons.accountCircle;
 const PhotoCameraIcon = approvedIcons.photoCamera;
 const DeleteIcon = approvedIcons.delete;
 
@@ -12,6 +14,7 @@ interface AvatarUploadProps {
 }
 
 export const AvatarUpload = ({ currentAvatar, onAvatarChange }: AvatarUploadProps) => {
+  const theme = useTheme();
   const [preview, setPreview] = useState<string | null>(currentAvatar);
   const [error, setError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,16 +102,12 @@ export const AvatarUpload = ({ currentAvatar, onAvatarChange }: AvatarUploadProp
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-      <Avatar
+      <ProfileAvatar
         src={preview || undefined}
-        sx={{
-          width: 120,
-          height: 120,
-          bgcolor: "primary.main"
-        }}
-      >
-        {!preview && <AccountCircleIcon sx={{ width: 80, height: 80 }} />}
-      </Avatar>
+        size={120}
+        iconSize={80}
+        bgColor={theme.ui.avatarUpload.avatarBg}
+      />
 
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <input
@@ -119,32 +118,36 @@ export const AvatarUpload = ({ currentAvatar, onAvatarChange }: AvatarUploadProp
           onChange={handleFileSelect}
           aria-label="Upload avatar image"
         />
-        <Button
+        <IconActionButton
           variant="outlined"
-          startIcon={<PhotoCameraIcon />}
+          tone="neutral"
+          icon={<PhotoCameraIcon />}
+          iconColor={theme.icons.photoCamera || theme.icons.default}
+          label={preview ? "Change Avatar" : "Upload Avatar"}
           onClick={() => fileInputRef.current?.click()}
-        >
-          {preview ? "Change" : "Upload"}
-        </Button>
+        />
         {preview && (
-          <IconButton
+          <IconActionButton
+            tone="danger"
+            variant="text"
+            icon={<DeleteIcon />}
+            iconColor={theme.icons.delete || theme.icons.default}
+            label="Remove Avatar"
             onClick={handleRemove}
-            color="error"
-            aria-label="Remove avatar"
             size="small"
-          >
-            <DeleteIcon />
-          </IconButton>
+            iconOnly
+            sx={{ color: theme.ui.avatarUpload.deleteIcon }}
+          />
         )}
       </Box>
 
       {error && (
-        <Typography variant="caption" color="error" sx={{ textAlign: "center" }}>
+        <Typography variant="caption" sx={{ textAlign: "center", color: theme.ui.avatarUpload.errorText }}>
           {error}
         </Typography>
       )}
 
-      <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center" }}>
+      <Typography variant="caption" sx={{ textAlign: "center", color: theme.ui.avatarUpload.helperText }}>
         Square images work best. Max 2MB.
       </Typography>
     </Box>

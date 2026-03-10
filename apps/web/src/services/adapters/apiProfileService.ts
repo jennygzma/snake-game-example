@@ -73,10 +73,10 @@ export const apiProfileService: ProfileService = {
 
   async deleteProfile(profileId: string) {
     try {
-      await fetch(`${API_BASE_URL}/v1/profiles/${profileId}`, {
+      const response = await fetch(`${API_BASE_URL}/v1/profiles/${profileId}`, {
         method: "DELETE"
       });
-      return true;
+      return response.ok;
     } catch (error) {
       return false;
     }

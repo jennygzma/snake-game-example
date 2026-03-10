@@ -29,7 +29,7 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
         aspectRatio: "1 / 1",
         mx: "auto",
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: theme.ui.gameBoard.border,
         borderRadius: 1,
         overflow: "hidden",
         backgroundColor: theme.game.boardBg

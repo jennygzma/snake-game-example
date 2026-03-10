@@ -1,20 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, TextField, Button, Typography, Alert } from "@mui/material";
+import { Box, TextField, Typography, Stack, Chip } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { PageLayout } from "../components/shared/PageLayout";
+import { IconActionButton } from "../components/shared/IconActionButton";
 import { AvatarUpload } from "../components/profile/AvatarUpload";
+import { CreateProfileDialog } from "../components/profile/CreateProfileDialog";
 import { DeleteProfileDialog } from "../components/profile/DeleteProfileDialog";
+import { ProfileCard } from "../components/profile/ProfileCard";
 import { useProfile } from "../hooks/useProfile";
+import { approvedIcons } from "../theme/approvedIcons";
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
-  const { activeProfile, updateProfile, deleteProfile, isLoading } = useProfile();
+  const theme = useTheme();
+  const { profiles, activeProfile, updateProfile, deleteProfile, activateProfile, createProfile, isLoading } =
+    useProfile();
   
   const [name, setName] = useState(activeProfile?.name || "");
   const [avatarBase64, setAvatarBase64] = useState<string | null>(activeProfile?.avatarBase64 || null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  useEffect(() => {
+    setName(activeProfile?.name || "");
+    setAvatarBase64(activeProfile?.avatarBase64 || null);
+    setError("");
+  }, [activeProfile?.avatarBase64, activeProfile?.id, activeProfile?.name]);
 
   const handleSave = async () => {
     if (!activeProfile) return;
@@ -50,6 +64,14 @@ export const ProfilePage = () => {
     navigate("/");
   };
 
+  const handleCreateProfile = async ({ name, avatarBase64 }: { name: string; avatarBase64?: string | null }) => {
+    const created = await createProfile({
+      name,
+      ...(avatarBase64 ? { avatarBase64 } : {})
+    });
+    await activateProfile(created.id);
+  };
+
   if (isLoading || !activeProfile) {
     return (
       <PageLayout>
@@ -67,6 +89,54 @@ export const ProfilePage = () => {
         <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: "center" }}>
           Edit Profile
         </Typography>
+        <Stack spacing={1.5} sx={{ maxWidth: 760, mx: "auto", mb: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+            <Typography variant="h6" component="h2">
+              Profiles
+            </Typography>
+            <IconActionButton
+              tone="neutral"
+              variant="outlined"
+              icon={<approvedIcons.add />}
+              iconColor={theme.icons.add || theme.icons.default}
+              label="Add Profile"
+              iconOnly
+              onClick={() => setCreateDialogOpen(true)}
+              disabled={isSaving}
+            />
+          </Box>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            {profiles.map((profile) => (
+              <Box key={profile.id} sx={{ display: "grid", gap: 1, justifyItems: "center" }}>
+                <ProfileCard profile={profile} onSelect={async (selected) => void activateProfile(selected.id)} />
+                {profile.isActive ? (
+                  <Chip
+                    size="small"
+                    label="Active"
+                    sx={{
+                      bgcolor: (theme) => theme.ui.profile.activeChipBg,
+                      color: (theme) => theme.ui.profile.activeChipText,
+                      fontWeight: 600
+                    }}
+                  />
+                ) : (
+                  <IconActionButton
+                    size="small"
+                    variant="text"
+                    tone="neutral"
+                    icon={<approvedIcons.swapHoriz />}
+                    iconColor={theme.icons.swapHoriz || theme.icons.default}
+                    label="Switch Profile"
+                    iconOnly
+                    onClick={async () => {
+                      await activateProfile(profile.id);
+                    }}
+                  />
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Stack>
         <Box
           sx={{
             maxWidth: 500,
@@ -98,35 +168,59 @@ export const ProfilePage = () => {
           />
 
           {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
+            <Box
+              role="alert"
+              sx={{
+                mt: 2,
+                p: 1.5,
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: (theme) => theme.ui.feedback.errorBorder,
+                bgcolor: (theme) => theme.ui.feedback.errorBg,
+                color: (theme) => theme.ui.feedback.errorText
+              }}
+            >
               {error}
-            </Alert>
+            </Box>
           )}
 
           <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between", mt: 2 }}>
-            <Button
+            <IconActionButton
               variant="outlined"
-              color="error"
+              tone="danger"
+              icon={<approvedIcons.delete />}
+              iconColor={theme.icons.delete || theme.icons.default}
+              label="Delete Profile"
               onClick={() => setDeleteDialogOpen(true)}
               disabled={isSaving}
-            >
-              Delete Profile
-            </Button>
+              sx={{
+                color: (theme) => theme.ui.profile.deleteButtonBg,
+                borderColor: (theme) => theme.ui.profile.deleteButtonBg,
+                "&:hover": {
+                  borderColor: (theme) => theme.ui.profile.deleteButtonHoverBg,
+                  color: (theme) => theme.ui.profile.deleteButtonHoverBg
+                }
+              }}
+            />
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Button
+              <IconActionButton
+                tone="neutral"
                 variant="outlined"
+                icon={<approvedIcons.close />}
+                iconColor={theme.icons.close || theme.icons.default}
+                label="Cancel"
                 onClick={() => navigate("/")}
                 disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
+              />
+              <IconActionButton
+                tone="primary"
                 variant="contained"
+                icon={<approvedIcons.check />}
+                iconColor={theme.icons.check || theme.icons.default}
+                label={isSaving ? "Saving..." : "Save Changes"}
                 onClick={handleSave}
                 disabled={isSaving || !name.trim()}
-              >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
+              />
             </Box>
           </Box>
         </Box>
@@ -137,6 +231,11 @@ export const ProfilePage = () => {
         profile={activeProfile}
         onClose={() => setDeleteDialogOpen(false)}
         onDelete={handleDelete}
+      />
+      <CreateProfileDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onCreate={handleCreateProfile}
       />
     </>
   );

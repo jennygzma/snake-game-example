@@ -1,16 +1,14 @@
 import { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
   DialogContentText,
-  DialogActions,
-  Button,
   Typography,
   Box
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { Profile } from "@snake/contracts";
 import { approvedIcons } from "../../theme/approvedIcons";
+import { AppDialogShell } from "../shared/AppDialogShell";
+import { IconActionButton } from "../shared/IconActionButton";
 
 const WarningIcon = approvedIcons.warning;
 
@@ -22,6 +20,7 @@ interface DeleteProfileDialogProps {
 }
 
 export const DeleteProfileDialog = ({ open, profile, onClose, onDelete }: DeleteProfileDialogProps) => {
+  const theme = useTheme();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -45,50 +44,68 @@ export const DeleteProfileDialog = ({ open, profile, onClose, onDelete }: Delete
   };
 
   return (
-    <Dialog
+    <AppDialogShell
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      aria-labelledby="delete-profile-dialog-title"
-      aria-describedby="delete-profile-dialog-description"
-    >
-      <DialogTitle id="delete-profile-dialog-title">
+      title={
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <WarningIcon color="error" />
+          <WarningIcon sx={{ color: theme.icons.warning || theme.ui.dialog.warningTitle }} />
           <span>Delete Profile?</span>
         </Box>
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="delete-profile-dialog-description">
-          Are you sure you want to delete <strong>{profile?.name}</strong>?
-        </DialogContentText>
-        <Box sx={{ mt: 2, p: 2, bgcolor: "error.50", borderRadius: 1, border: 1, borderColor: "error.200" }}>
-          <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-            This action cannot be undone.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Deleting this profile will also delete:
-          </Typography>
-          <Typography component="ul" variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
-            <li>All custom themes</li>
-            <li>All game scores and history</li>
-          </Typography>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={isDeleting}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleDelete}
-          color="error"
-          variant="contained"
-          disabled={isDeleting}
-        >
-          {isDeleting ? "Deleting..." : "Delete Profile"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      }
+      titleId="delete-profile-dialog-title"
+      descriptionId="delete-profile-dialog-description"
+      actions={
+        <>
+          <IconActionButton
+            tone="neutral"
+            variant="text"
+            icon={<approvedIcons.close />}
+            iconColor={theme.icons.close || theme.icons.default}
+            label="Cancel"
+            onClick={handleClose}
+            disabled={isDeleting}
+          />
+          <IconActionButton
+            tone="danger"
+            variant="contained"
+            icon={<approvedIcons.delete />}
+            iconColor={theme.icons.delete || theme.icons.default}
+            label={isDeleting ? "Deleting..." : "Delete Profile"}
+            onClick={handleDelete}
+            disabled={isDeleting}
+            sx={{
+              bgcolor: theme.ui.dialog.destructiveButtonBg,
+              "&:hover": { bgcolor: theme.ui.dialog.destructiveButtonHoverBg }
+            }}
+          />
+        </>
+      }
+    >
+      <DialogContentText id="delete-profile-dialog-description">
+        Are you sure you want to delete <strong>{profile?.name}</strong>?
+      </DialogContentText>
+      <Box
+        sx={{
+          mt: 2,
+          p: 2,
+          bgcolor: theme.ui.dialog.warningBg,
+          borderRadius: 1,
+          border: 1,
+          borderColor: theme.ui.dialog.warningBorder
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 600, color: theme.ui.dialog.warningTitle }}>
+          This action cannot be undone.
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 1, color: theme.ui.dialog.warningBody }}>
+          Deleting this profile will also delete:
+        </Typography>
+        <Typography component="ul" variant="body2" sx={{ mt: 0.5, mb: 0, pl: 2, color: theme.ui.dialog.warningBody }}>
+          <li>All custom themes</li>
+          <li>All game scores and history</li>
+        </Typography>
+      </Box>
+    </AppDialogShell>
   );
 };

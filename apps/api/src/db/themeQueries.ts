@@ -199,12 +199,22 @@ export const themeQueries = (db: Database) => ({
    * Set a theme as active (and deactivate all others for the profile)
    */
   setActive(id: string): CustomTheme | null {
+    const row = db
+      .prepare(
+        `SELECT user_id, profile_id
+         FROM custom_themes
+         WHERE id = ?`
+      )
+      .get(id) as { user_id: string; profile_id: string | null } | undefined;
+    if (!row) return null;
+
     const theme = this.getById(id);
     if (!theme) return null;
 
-    // Deactivate all themes for this profile (if profile_id exists)
-    if (theme.userId) {
-      db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE user_id = ?`).run(theme.userId);
+    if (row.profile_id) {
+      db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE profile_id = ?`).run(row.profile_id);
+    } else {
+      db.prepare(`UPDATE custom_themes SET is_active = 0 WHERE user_id = ?`).run(row.user_id);
     }
 
     // Activate the specified theme

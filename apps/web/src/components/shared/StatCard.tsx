@@ -10,7 +10,7 @@ export const StatCard = ({ label, value }: StatCardProps) => {
   return (
     <Panel>
       <Stack spacing={0.5}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: (theme) => theme.ui.statCard.labelText }}>
           {label}
         </Typography>
         <Typography variant="h6">{value}</Typography>

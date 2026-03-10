@@ -10,7 +10,7 @@ export const Panel = ({ children, sx, ...rest }: PanelProps) => {
       sx={{
         p: 2,
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: (theme) => theme.ui.shared.panelBorder,
         borderRadius: (theme) => `${theme.shape.borderRadius}px`,
         ...sx
       }}

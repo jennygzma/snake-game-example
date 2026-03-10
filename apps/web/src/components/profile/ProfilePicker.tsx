@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Box, Container, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { ProfileCard } from "./ProfileCard";
 import { CreateProfileDialog } from "./CreateProfileDialog";
 import { approvedIcons } from "../../theme/approvedIcons";
@@ -15,6 +16,7 @@ interface ProfilePickerProps {
 
 export const ProfilePicker = ({ profiles, onSelectProfile, onCreateProfile }: ProfilePickerProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const theme = useTheme();
 
   return (
     <>
@@ -61,14 +63,14 @@ export const ProfilePicker = ({ profiles, onSelectProfile, onCreateProfile }: Pr
               alignItems: "center",
               justifyContent: "center",
               border: 2,
-              borderColor: "divider",
+              borderColor: theme.ui.profilePicker.newCardBorder,
               borderStyle: "dashed",
               borderRadius: 1,
               cursor: "pointer",
               transition: "all 0.2s",
               "&:hover": {
-                borderColor: "primary.main",
-                bgcolor: "action.hover"
+                borderColor: theme.ui.profilePicker.newCardHoverBorder,
+                bgcolor: theme.ui.profilePicker.newCardHoverBg
               }
             }}
             onClick={() => setDialogOpen(true)}
@@ -83,8 +85,8 @@ export const ProfilePicker = ({ profiles, onSelectProfile, onCreateProfile }: Pr
             aria-label="Create new profile"
           >
             <Box sx={{ textAlign: "center" }}>
-              <AccountCircleIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
-              <Typography variant="body2" color="text.secondary">
+              <AccountCircleIcon sx={{ fontSize: 48, color: theme.ui.profilePicker.mutedText, mb: 1 }} />
+              <Typography variant="body2" sx={{ color: theme.ui.profilePicker.mutedText }}>
                 New Profile
               </Typography>
             </Box>
@@ -92,7 +94,7 @@ export const ProfilePicker = ({ profiles, onSelectProfile, onCreateProfile }: Pr
         </Box>
 
         {profiles.length === 0 && (
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center" }}>
+          <Typography variant="body1" sx={{ textAlign: "center", color: theme.ui.profilePicker.mutedText }}>
             No profiles yet. Create one to get started!
           </Typography>
         )}

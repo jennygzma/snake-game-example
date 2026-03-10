@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
 import { ActionButton } from "../components/shared/ActionButton";
@@ -7,6 +7,7 @@ import { PageLayout } from "../components/shared/PageLayout";
 import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { useKeyboard } from "../hooks/useKeyboard";
+import { useProfile } from "../hooks/useProfile";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
@@ -19,8 +20,11 @@ const resolveService = (): GameService => {
 
 export const GamePage = () => {
   const service = useMemo(resolveService, []);
-  const { game, settings, player, highScore, leaderboard, error, startGame, resetGame, togglePause, turn } =
-    useGame(service);
+  const { activeProfile } = useProfile();
+  const { game, settings, player, highScore, error, startGame, resetGame, togglePause, turn } = useGame(
+    service,
+    activeProfile?.id
+  );
   const serviceMode = import.meta.env.VITE_GAME_SERVICE_MODE === "local" ? "local" : "api";
   const pauseLabel = game.status === "paused" ? "Resume" : "Pause";
   const isGameOverView = game.status === "game-over";
@@ -73,10 +77,10 @@ export const GamePage = () => {
 
   return (
     <PageLayout maxWidth="lg" spacing={2}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
           Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
           Data source: {serviceMode} service
         </Typography>
         <Box
@@ -97,7 +101,21 @@ export const GamePage = () => {
         >
           {announcement}
         </Box>
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? (
+          <Box
+            role="alert"
+            sx={{
+              p: 1.5,
+              borderRadius: 1,
+              border: "1px solid",
+              borderColor: (theme) => theme.ui.feedback.errorBorder,
+              bgcolor: (theme) => theme.ui.feedback.errorBg,
+              color: (theme) => theme.ui.feedback.errorText
+            }}
+          >
+            {error}
+          </Box>
+        ) : null}
         <Box
           sx={{
             display: "grid",
@@ -120,7 +138,7 @@ export const GamePage = () => {
                 <Typography variant="h6" gutterBottom>
                   Score: {game.score}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
                   High Score: {highScore}
                 </Typography>
                 <Stack direction={{ xs: "row", sm: "column" }} spacing={1.5} sx={{ mt: 2 }}>

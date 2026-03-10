@@ -3,6 +3,7 @@ import type { CustomTheme, SaveThemeInput } from "@snake/contracts";
 import { apiThemeService } from "../services/adapters/apiThemeService";
 import { localThemeService } from "../services/storage/localThemeService";
 import { useAppTheme } from "../contexts/ThemeContext";
+import { useProfile } from "./useProfile";
 
 // Toggle between API and local service
 const USE_API = import.meta.env.VITE_USE_API === "true";
@@ -10,6 +11,7 @@ const themeService = USE_API ? apiThemeService : localThemeService;
 
 export const useTheme = () => {
   const { setActiveCustomTheme } = useAppTheme();
+  const { activeProfile } = useProfile();
   const [themes, setThemes] = useState<CustomTheme[]>([]);
   const [activeTheme, setActiveTheme] = useState<CustomTheme | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,12 +35,19 @@ export const useTheme = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeProfile?.id]);
 
   // Load on mount
   useEffect(() => {
-    loadThemes();
-  }, [loadThemes]);
+    if (!activeProfile) {
+      setThemes([]);
+      setActiveTheme(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    void loadThemes();
+  }, [activeProfile, loadThemes]);
 
   // Create a new theme
   const createTheme = useCallback(

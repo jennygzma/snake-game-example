@@ -1,8 +1,7 @@
-import { Box, Card, CardActionArea, Typography, Avatar } from "@mui/material";
-import { approvedIcons } from "../../theme/approvedIcons";
+import { Box, Card, CardActionArea, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { Profile } from "@snake/contracts";
-
-const AccountCircleIcon = approvedIcons.accountCircle;
+import { ProfileAvatar } from "../shared/ProfileAvatar";
 
 interface ProfileCardProps {
   profile: Profile;
@@ -10,6 +9,8 @@ interface ProfileCardProps {
 }
 
 export const ProfileCard = ({ profile, onSelect }: ProfileCardProps) => {
+  const theme = useTheme();
+
   return (
     <Card
       sx={{
@@ -29,16 +30,12 @@ export const ProfileCard = ({ profile, onSelect }: ProfileCardProps) => {
           p: 2
         }}
       >
-        <Avatar
+        <ProfileAvatar
           src={profile.avatarBase64 || undefined}
-          sx={{
-            width: 80,
-            height: 80,
-            bgcolor: "primary.main"
-          }}
-        >
-          {!profile.avatarBase64 && <AccountCircleIcon sx={{ width: 60, height: 60 }} />}
-        </Avatar>
+          size={80}
+          iconSize={60}
+          bgColor={theme.ui.profileCard.avatarBg}
+        />
         <Typography
           variant="body1"
           sx={{

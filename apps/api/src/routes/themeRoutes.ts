@@ -14,9 +14,6 @@ export const createThemeRouter = (db: Database) => {
   const profileQs = profileQueries(db);
   const router = Router();
 
-  // Hardcoded user ID for single-user mode (matches gameDataService pattern)
-  const USER_ID = "dev-user-1";
-
   /**
    * GET /themes - List all themes for the active profile
    */
@@ -66,7 +63,13 @@ export const createThemeRouter = (db: Database) => {
       return;
     }
 
-    const payload = themeResponseSchema.parse(themeService.createTheme(USER_ID, parsedBody.data));
+    const activeProfile = profileQs.getActive();
+    if (!activeProfile) {
+      res.status(404).json({ message: "No active profile found" });
+      return;
+    }
+
+    const payload = themeResponseSchema.parse(themeService.createTheme(activeProfile.id, parsedBody.data));
     res.status(201).json(payload);
   });
 

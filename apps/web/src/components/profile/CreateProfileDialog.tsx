@@ -1,14 +1,10 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box
-} from "@mui/material";
+import { TextField, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { CreateProfileInput } from "@snake/contracts";
+import { AppDialogShell } from "../shared/AppDialogShell";
+import { IconActionButton } from "../shared/IconActionButton";
+import { approvedIcons } from "../../theme/approvedIcons";
 import { AvatarUpload } from "./AvatarUpload";
 
 interface CreateProfileDialogProps {
@@ -18,6 +14,7 @@ interface CreateProfileDialogProps {
 }
 
 export const CreateProfileDialog = ({ open, onClose, onCreate }: CreateProfileDialogProps) => {
+  const theme = useTheme();
   const [name, setName] = useState("");
   const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,54 +61,60 @@ export const CreateProfileDialog = ({ open, onClose, onCreate }: CreateProfileDi
   };
 
   return (
-    <Dialog
+    <AppDialogShell
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      aria-labelledby="create-profile-dialog-title"
-      aria-describedby="create-profile-dialog-description"
-    >
-      <form onSubmit={handleSubmit}>
-        <DialogTitle id="create-profile-dialog-title">Create Profile</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 3 }}>
-            <Box id="create-profile-dialog-description" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>
-              Create a new profile name and optional avatar.
-            </Box>
-            <AvatarUpload currentAvatar={avatarBase64} onAvatarChange={setAvatarBase64} />
-            <TextField
-              autoFocus
-              fullWidth
-              label="Profile Name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError("");
-              }}
-              error={!!error}
-              helperText={error || "Enter a name for your profile (1-40 characters)"}
-              disabled={isSubmitting}
-              inputProps={{
-                maxLength: 40,
-                "aria-label": "Profile name"
-              }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
+      title="Create Profile"
+      titleId="create-profile-dialog-title"
+      descriptionId="create-profile-dialog-description"
+      description="Create a new profile name and optional avatar."
+      actions={
+        <>
+          <IconActionButton
+            tone="neutral"
+            variant="text"
+            icon={<approvedIcons.close />}
+            iconColor={theme.icons.close || theme.icons.default}
+            label="Cancel"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          />
+          <IconActionButton
             type="submit"
+            tone="primary"
             variant="contained"
+            icon={<approvedIcons.add />}
+            iconColor={theme.icons.add || theme.icons.default}
+            label={isSubmitting ? "Creating..." : "Create"}
             disabled={isSubmitting || !name.trim()}
-          >
-            {isSubmitting ? "Creating..." : "Create"}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
+          />
+        </>
+      }
+      paperProps={{
+        component: "form",
+        onSubmit: (e: React.FormEvent<HTMLFormElement>) => void handleSubmit(e)
+      }}
+    >
+      <Box sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+        <AvatarUpload currentAvatar={avatarBase64} onAvatarChange={setAvatarBase64} />
+        <TextField
+          autoFocus
+          fullWidth
+          label="Profile Name"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError("");
+          }}
+          error={!!error}
+          helperText={error || "Enter a name for your profile (1-40 characters)"}
+          disabled={isSubmitting}
+          inputProps={{
+            maxLength: 40,
+            "aria-label": "Profile name"
+          }}
+        />
+      </Box>
+    </AppDialogShell>
   );
 };

@@ -1,4 +1,5 @@
 import { Box, Divider, Stack, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { LeaderboardEntry } from "@snake/contracts";
 
 const formatEndedAt = (value: string): string => {
@@ -13,15 +14,17 @@ type LeaderboardPanelProps = {
 };
 
 export const LeaderboardPanel = ({ entries, showProfileName = false }: LeaderboardPanelProps) => {
+  const theme = useTheme();
+
   return (
     <Stack spacing={1}>
       <Typography variant="h6">Leaderboard</Typography>
       {entries.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: theme.ui.leaderboard.mutedText }}>
           No scores yet. Finish a run to create leaderboard entries.
         </Typography>
       ) : (
-        <Stack divider={<Divider flexItem />}>
+        <Stack divider={<Divider flexItem sx={{ borderColor: theme.ui.leaderboard.divider }} />}>
           {entries.map((entry) => (
             <Box
               key={`${entry.rank}-${entry.userId}-${entry.endedAt}`}
@@ -33,7 +36,7 @@ export const LeaderboardPanel = ({ entries, showProfileName = false }: Leaderboa
                 py: 1
               }}
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.ui.leaderboard.mutedText }}>
                 #{entry.rank}
               </Typography>
               {showProfileName && (
@@ -42,7 +45,7 @@ export const LeaderboardPanel = ({ entries, showProfileName = false }: Leaderboa
                 </Typography>
               )}
               <Typography variant="body2">{entry.score} pts</Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: theme.ui.leaderboard.mutedText }}>
                 {formatEndedAt(entry.endedAt)}
               </Typography>
             </Box>

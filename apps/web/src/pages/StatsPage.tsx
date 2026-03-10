@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Typography, Tabs, Tab, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { LeaderboardEntry } from "@snake/contracts";
 import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
 import { ScorePanel } from "../components/game/ScorePanel";
@@ -17,17 +18,21 @@ const resolveService = (): GameService => {
 };
 
 export const StatsPage = () => {
+  const theme = useTheme();
   const service = useMemo(resolveService, []);
-  const { game, player, highScore, leaderboard } = useGame(service);
-  const { profiles, activeProfile } = useProfile();
+  const { activeProfile, profiles } = useProfile();
+  const { game, player, highScore, activeLeaderboard, globalLeaderboard } = useGame(
+    service,
+    activeProfile?.id
+  );
   const [tabIndex, setTabIndex] = useState(0);
 
-  const leaderboardWithResolvedNames = useMemo<LeaderboardEntry[]>(() => {
-    if (leaderboard.length === 0) return leaderboard;
+  const globalLeaderboardWithResolvedNames = useMemo<LeaderboardEntry[]>(() => {
+    if (globalLeaderboard.length === 0) return globalLeaderboard;
 
     const profileNameById = new Map(profiles.map((profile) => [profile.id, profile.name]));
 
-    return leaderboard.map((entry) => {
+    return globalLeaderboard.map((entry) => {
       const matchedName = profileNameById.get(entry.userId);
       const fallbackName =
         entry.profileName === "Player" && activeProfile ? activeProfile.name : entry.profileName;
@@ -37,7 +42,7 @@ export const StatsPage = () => {
         profileName: matchedName ?? fallbackName
       };
     });
-  }, [activeProfile, leaderboard, profiles]);
+  }, [activeProfile, globalLeaderboard, profiles]);
 
   return (
     <PageLayout maxWidth="md" spacing={3}>
@@ -56,7 +61,7 @@ export const StatsPage = () => {
           <Tabs 
             value={tabIndex} 
             onChange={(_, newValue) => setTabIndex(newValue)}
-            sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+            sx={{ borderBottom: 1, borderColor: theme.ui.stats.tabsBorder, mb: 2 }}
           >
             <Tab label="My Scores" />
             <Tab label="All Profiles" />
@@ -64,13 +69,13 @@ export const StatsPage = () => {
 
           <Box role="tabpanel" hidden={tabIndex !== 0}>
             {tabIndex === 0 && (
-              <LeaderboardPanel entries={leaderboardWithResolvedNames} showProfileName={false} />
+              <LeaderboardPanel entries={activeLeaderboard} showProfileName={false} />
             )}
           </Box>
 
           <Box role="tabpanel" hidden={tabIndex !== 1}>
             {tabIndex === 1 && (
-              <LeaderboardPanel entries={leaderboardWithResolvedNames} showProfileName={true} />
+              <LeaderboardPanel entries={globalLeaderboardWithResolvedNames} showProfileName={true} />
             )}
           </Box>
         </Panel>
