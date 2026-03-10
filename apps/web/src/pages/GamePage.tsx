@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Container, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
-import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
-import { ScorePanel } from "../components/game/ScorePanel";
 import { ActionButton } from "../components/shared/ActionButton";
+import { PageLayout } from "../components/shared/PageLayout";
 import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { useKeyboard } from "../hooks/useKeyboard";
@@ -18,7 +17,7 @@ const resolveService = (): GameService => {
   return mode === "local" ? localGameService : apiGameService;
 };
 
-export const App = () => {
+export const GamePage = () => {
   const service = useMemo(resolveService, []);
   const { game, settings, player, highScore, leaderboard, error, startGame, resetGame, togglePause, turn } =
     useGame(service);
@@ -73,8 +72,7 @@ export const App = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={2}>
+    <PageLayout maxWidth="lg" spacing={2}>
         <Typography variant="caption" color="text.secondary">
           Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
         </Typography>
@@ -119,14 +117,13 @@ export const App = () => {
           <Box>
             <Panel sx={{ height: "100%" }}>
               <Stack spacing={2}>
-                <ScorePanel
-                  player={player}
-                  score={game.score}
-                  highScore={highScore}
-                  status={game.status}
-                />
-                <LeaderboardPanel entries={leaderboard} />
-                <Stack direction={{ xs: "row", sm: "column" }} spacing={1.5}>
+                <Typography variant="h6" gutterBottom>
+                  Score: {game.score}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  High Score: {highScore}
+                </Typography>
+                <Stack direction={{ xs: "row", sm: "column" }} spacing={1.5} sx={{ mt: 2 }}>
                   <ActionButton
                     tone="play"
                     icon={<approvedIcons.play />}
@@ -156,7 +153,6 @@ export const App = () => {
             </Panel>
           </Box>
         </Box>
-      </Stack>
-    </Container>
+    </PageLayout>
   );
 };

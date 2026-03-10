@@ -5,11 +5,6 @@ export const gameSettingsSchema = z.object({
   gridSize: z.number().int().min(8).max(64)
 });
 
-export const profileSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1).max(40)
-});
-
 export const runRecordInputSchema = z.object({
   score: z.number().int().min(0),
   durationMs: z.number().int().min(0),
@@ -32,6 +27,7 @@ export const recentRunsResponseSchema = z.object({
 export const leaderboardEntrySchema = z.object({
   rank: z.number().int().min(1),
   userId: z.string().min(1),
+  profileName: z.string().min(1),
   score: z.number().int().min(0),
   endedAt: z.string().datetime()
 });
@@ -41,7 +37,6 @@ export const leaderboardResponseSchema = z.object({
 });
 
 export type GameSettings = z.infer<typeof gameSettingsSchema>;
-export type Profile = z.infer<typeof profileSchema>;
 export type RunRecordInput = z.infer<typeof runRecordInputSchema>;
 export type RunRecord = z.infer<typeof runRecordSchema>;
 export type HighScoreResponse = z.infer<typeof highScoreResponseSchema>;

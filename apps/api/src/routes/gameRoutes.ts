@@ -3,7 +3,7 @@ import {
   gameSettingsSchema,
   highScoreResponseSchema,
   leaderboardResponseSchema,
-  profileSchema,
+  ProfileSchema,
   recentRunsResponseSchema,
   runRecordInputSchema,
   runRecordSchema
@@ -18,7 +18,7 @@ const asNumber = (value: unknown, fallback: number): number => {
 export const gameRouter = Router();
 
 gameRouter.get("/profile", (_req, res) => {
-  const payload = profileSchema.parse(gameDataService.getProfile());
+  const payload = ProfileSchema.parse(gameDataService.getProfile());
   res.json(payload);
 });
 
