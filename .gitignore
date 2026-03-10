@@ -36,3 +36,4 @@ apps/api/*.db
 apps/api/*.db-shm
 apps/api/*.db-wal
 apps/api/data/
+apps/api/apps/

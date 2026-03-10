@@ -11,9 +11,14 @@
 
 import Database from "better-sqlite3";
 import { randomUUID } from "crypto";
+import { mkdirSync } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const DB_PATH = path.join(process.cwd(), "apps/api/snake.db");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DB_PATH = path.join(__dirname, "../../../data/snake.db");
+mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 function runMigration() {
   console.log("🔄 Starting profile migration...");
