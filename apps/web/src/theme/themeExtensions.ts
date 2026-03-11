@@ -36,6 +36,7 @@ declare module "@mui/material/styles" {
       play?: string;
       pause?: string;
       photoCamera?: string;
+      public?: string;
       reset?: string;
       settings?: string;
       sportsEsports?: string;
@@ -172,6 +173,7 @@ declare module "@mui/material/styles" {
       play?: string;
       pause?: string;
       photoCamera?: string;
+      public?: string;
       reset?: string;
       settings?: string;
       sportsEsports?: string;

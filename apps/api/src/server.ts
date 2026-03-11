@@ -8,6 +8,7 @@ import { createGameRouter } from "./routes/gameRoutes";
 import { createThemeRouter } from "./routes/themeRoutes";
 import { createProfileRouter } from "./routes/profileRoutes";
 import { createVariationRouter } from "./routes/variationRoutes";
+import { createHubRoutes } from "./routes/hubRoutes";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ app.use("/v1", createGameRouter(db));
 app.use("/v1/themes", createThemeRouter(db));
 app.use("/v1/profiles", createProfileRouter(db));
 app.use("/v1/variations", createVariationRouter(db));
+app.use("/v1/hub", createHubRoutes(db));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });

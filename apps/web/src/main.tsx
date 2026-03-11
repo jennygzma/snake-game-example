@@ -11,6 +11,7 @@ import { GamePage } from "./pages/GamePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { HubPage } from "./pages/HubPage";
 
 const AppContent = () => {
   const { theme } = useAppTheme();
@@ -72,6 +73,7 @@ const AppContent = () => {
             <Route path="/design" element={<SettingsPage />} />
             <Route path="/settings" element={<Navigate to="/design" replace />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/hub" element={<HubPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

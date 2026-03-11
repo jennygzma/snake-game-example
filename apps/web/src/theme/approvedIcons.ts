@@ -8,6 +8,7 @@ import EditRounded from "@mui/icons-material/EditRounded";
 import PauseRounded from "@mui/icons-material/PauseRounded";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
+import PublicRounded from "@mui/icons-material/PublicRounded";
 import ReplayRounded from "@mui/icons-material/ReplayRounded";
 import SettingsRounded from "@mui/icons-material/SettingsRounded";
 import SportsEsportsRounded from "@mui/icons-material/SportsEsportsRounded";
@@ -26,6 +27,7 @@ export const approvedIcons = {
   pause: PauseRounded,
   photoCamera: PhotoCamera,
   play: PlayArrowRounded,
+  public: PublicRounded,
   replay: ReplayRounded,
   settings: SettingsRounded,
   sportsEsports: SportsEsportsRounded,
