@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS game_settings (
   profile_id TEXT PRIMARY KEY,
   speed INTEGER NOT NULL,
   grid_size INTEGER NOT NULL,
+  variation_id TEXT,
   updated_at TEXT NOT NULL,
+  FOREIGN KEY (variation_id) REFERENCES game_variations(id) ON DELETE SET NULL,
   FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
 );

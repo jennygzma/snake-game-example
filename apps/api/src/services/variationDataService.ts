@@ -28,8 +28,9 @@ export const createVariationDataService = (db: Database) => {
     },
 
     getVariation(id: string): GameVariationResponse {
+      const profile = getActiveProfile();
       const variation = variations.getVariationById(id);
-      if (!variation) {
+      if (!variation || variation.profileId !== profile.id) {
         throw new Error("VARIATION_NOT_FOUND");
       }
       return { variation };
@@ -42,15 +43,30 @@ export const createVariationDataService = (db: Database) => {
     },
 
     updateVariation(id: string, input: GameVariationInput): GameVariationResponse {
+      const profile = getActiveProfile();
+      const existing = variations.getVariationById(id);
+      if (!existing || existing.profileId !== profile.id) {
+        throw new Error("Variation not found");
+      }
       const variation = variations.updateVariation(id, input);
       return { variation };
     },
 
     deleteVariation(id: string): void {
+      const profile = getActiveProfile();
+      const existing = variations.getVariationById(id);
+      if (!existing || existing.profileId !== profile.id) {
+        throw new Error("Variation not found");
+      }
       variations.deleteVariation(id);
     },
 
     incrementUsageCount(id: string): void {
+      const profile = getActiveProfile();
+      const existing = variations.getVariationById(id);
+      if (!existing || existing.profileId !== profile.id) {
+        throw new Error("Variation not found");
+      }
       variations.incrementUsageCount(id);
     }
   };

@@ -86,7 +86,39 @@ export const profileQueries = (db: Database) => ({
         }
       | undefined;
 
-    if (!row) return null;
+    if (!row) {
+      const fallback = db
+        .prepare(
+          `SELECT id, name, avatar_base64, created_at, updated_at, is_active
+           FROM profiles
+           ORDER BY created_at ASC
+           LIMIT 1`
+        )
+        .get() as
+        | {
+            id: string;
+            name: string;
+            avatar_base64: string | null;
+            created_at: string;
+            updated_at: string;
+            is_active: number;
+          }
+        | undefined;
+
+      if (!fallback) return null;
+
+      db.prepare(`UPDATE profiles SET is_active = 0`).run();
+      db.prepare(`UPDATE profiles SET is_active = 1 WHERE id = ?`).run(fallback.id);
+
+      return {
+        id: fallback.id,
+        name: fallback.name,
+        avatarBase64: fallback.avatar_base64,
+        createdAt: fallback.created_at,
+        updatedAt: fallback.updated_at,
+        isActive: true
+      };
+    }
 
     return {
       id: row.id,
@@ -156,8 +188,24 @@ export const profileQueries = (db: Database) => ({
    * Delete a profile (CASCADE will delete associated themes and runs)
    */
   delete(id: string): boolean {
+    const existing = this.getById(id);
+    if (!existing) return false;
+
     const result = db.prepare(`DELETE FROM profiles WHERE id = ?`).run(id);
-    return result.changes > 0;
+    if (result.changes === 0) return false;
+
+    if (existing.isActive) {
+      const next = db
+        .prepare(`SELECT id FROM profiles ORDER BY created_at ASC LIMIT 1`)
+        .get() as { id: string } | undefined;
+
+      if (next?.id) {
+        db.prepare(`UPDATE profiles SET is_active = 0`).run();
+        db.prepare(`UPDATE profiles SET is_active = 1 WHERE id = ?`).run(next.id);
+      }
+    }
+
+    return true;
   },
 
   /**

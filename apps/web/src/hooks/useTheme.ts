@@ -5,9 +5,8 @@ import { localThemeService } from "../services/storage/localThemeService";
 import { useAppTheme } from "../contexts/ThemeContext";
 import { useProfile } from "./useProfile";
 
-// Toggle between API and local service
-const USE_API = import.meta.env.VITE_USE_API === "true";
-const themeService = USE_API ? apiThemeService : localThemeService;
+const SERVICE_MODE = import.meta.env.VITE_GAME_SERVICE_MODE;
+const themeService = SERVICE_MODE === "local" ? localThemeService : apiThemeService;
 
 export const useTheme = () => {
   const { setActiveCustomTheme } = useAppTheme();

@@ -62,7 +62,8 @@ const placeFood = (snake: Cell[], existingFoods: FoodItem[], gridSize: number, p
     position: next,
     effect: powerup.effect,
     value: powerup.value,
-    color: powerup.color
+    color: powerup.color,
+    image: powerup.image
   };
 };
 
@@ -127,8 +128,7 @@ export const setDirection = (state: GameState, direction: Direction): GameState 
 const applyEffect = (
   state: GameState,
   effect: PowerupEffect,
-  value: number,
-  settings: GameSettings
+  value: number
 ): GameState => {
   let newSnake = state.snake;
   let newScore = state.score;
@@ -237,7 +237,7 @@ export const stepGame = (
   };
 
   if (ateFood && eatenFood) {
-    newState = applyEffect(newState, eatenFood.effect, eatenFood.value, settings);
+    newState = applyEffect(newState, eatenFood.effect, eatenFood.value);
   }
 
   // Update foods

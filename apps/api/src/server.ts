@@ -23,12 +23,6 @@ const db = new Database(join(dataDir, "snake.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
-// Backward-compat: older game_runs tables may not have variation_id yet.
-const gameRunsInfo = db.pragma("table_info(game_runs)") as Array<{ name: string }>;
-if (gameRunsInfo.length > 0 && !gameRunsInfo.some((col) => col.name === "variation_id")) {
-  db.exec("ALTER TABLE game_runs ADD COLUMN variation_id TEXT;");
-}
-
 // Run schema migrations
 const schemaSQL = readFileSync(join(__dirname, "db", "schema.sql"), "utf-8");
 db.exec(schemaSQL);

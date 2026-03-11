@@ -2,15 +2,34 @@ import type {
   GameVariation,
   GameVariationInput,
   GameVariationListResponse,
-  GameVariationResponse
+  GameVariationResponse,
+  Profile
 } from "@snake/contracts";
+import { profileSchema } from "@snake/contracts";
 import type { VariationService } from "../variationService";
 
 const VARIATIONS_KEY = "snake_game_variations";
+const PROFILES_KEY = "snake.profiles";
+
+const readProfiles = (): Profile[] => {
+  const raw = localStorage.getItem(PROFILES_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => profileSchema.safeParse(value))
+      .filter((result): result is { success: true; data: Profile } => result.success)
+      .map((result) => result.data);
+  } catch {
+    return [];
+  }
+};
 
 const getActiveProfileId = (): string | null => {
-  const activeId = localStorage.getItem("snake_game_active_profile_id");
-  return activeId;
+  const activeProfile = readProfiles().find((profile) => profile.isActive);
+  return activeProfile?.id ?? null;
 };
 
 const loadVariations = (): GameVariation[] => {

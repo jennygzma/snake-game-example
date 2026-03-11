@@ -1,29 +1,29 @@
-import { useState } from "react";
-import { Typography, Box, Tabs, Tab } from "@mui/material";
-import type { CustomTheme, SaveThemeInput } from "@snake/contracts";
+import { useEffect, useMemo, useState } from "react";
+import { Box, Card, CardActions, CardContent, Chip, Tab, Tabs, Typography } from "@mui/material";
+import type { CustomTheme, GameVariation, SaveThemeInput } from "@snake/contracts";
 import { PageLayout } from "../components/shared/PageLayout";
-import { AppButton } from "../components/shared/AppButton";
+import { IconActionButton } from "../components/shared/IconActionButton";
+import { SaveThemeDialog } from "../components/settings/SaveThemeDialog";
 import { ThemeEditor } from "../components/settings/ThemeEditor";
 import { ThemeGallery } from "../components/settings/ThemeGallery";
-import { SaveThemeDialog } from "../components/settings/SaveThemeDialog";
 import { VariationEditor } from "../components/settings/VariationEditor";
-import { useTheme } from "../hooks/useTheme";
 import { useProfile } from "../hooks/useProfile";
+import { useTheme } from "../hooks/useTheme";
 import { useVariations } from "../hooks/useVariations";
+import { approvedIcons } from "../theme/approvedIcons";
+import { apiGameService } from "../services/adapters/apiGameService";
+import type { GameService } from "../services/gameService";
+import { localGameService } from "../services/storage/localGameService";
+
+const resolveGameService = (): GameService => {
+  const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
+  return mode === "local" ? localGameService : apiGameService;
+};
 
 export const SettingsPage = () => {
+  const gameService = useMemo(resolveGameService, []);
   const { activeProfile } = useProfile();
-  const {
-    themes,
-    activeTheme,
-    loading,
-    error,
-    createTheme,
-    updateTheme,
-    deleteTheme,
-    activateTheme
-  } = useTheme();
-  
+  const { themes, activeTheme, loading, error, createTheme, updateTheme, deleteTheme, activateTheme } = useTheme();
   const {
     variations,
     loading: variationsLoading,
@@ -34,10 +34,27 @@ export const SettingsPage = () => {
   } = useVariations(activeProfile?.id);
 
   const [activeTab, setActiveTab] = useState(0);
-  const [editingVariation, setEditingVariation] = useState<string | null>(null);
+  const [editingVariationId, setEditingVariationId] = useState<string | null>(null);
+  const [activeVariationId, setActiveVariationId] = useState<string | null>(null);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
+
+  const editingVariation: GameVariation | undefined =
+    editingVariationId ? variations.find((variation) => variation.id === editingVariationId) : undefined;
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const gameSettings = await gameService.getSettings();
+        setActiveVariationId(gameSettings.variationId ?? null);
+      } catch {
+        setActiveVariationId(null);
+      }
+    };
+
+    void loadSettings();
+  }, [activeProfile?.id, gameService]);
 
   const handleSaveFromEditor = async (themeData: SaveThemeInput) => {
     setPendingThemeData(themeData);
@@ -57,12 +74,21 @@ export const SettingsPage = () => {
     setEditingTheme(null);
   };
 
-  const handleEdit = (theme: CustomTheme) => {
-    setEditingTheme(theme);
+  const handleActivateVariation = async (variationId: string | null) => {
+    const settings = await gameService.getSettings();
+    await gameService.saveSettings({
+      speed: settings.speed,
+      gridSize: settings.gridSize,
+      variationId: variationId ?? undefined
+    });
+    setActiveVariationId(variationId);
   };
 
-  const handleCancelEdit = () => {
-    setEditingTheme(null);
+  const handleDeleteVariation = async (variationId: string) => {
+    await deleteVariation(variationId);
+    if (activeVariationId === variationId) {
+      await handleActivateVariation(null);
+    }
   };
 
   if (loading || variationsLoading) {
@@ -84,7 +110,7 @@ export const SettingsPage = () => {
         </Typography>
       </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: 1, borderColor: (theme) => theme.ui.stats.tabsBorder }}>
         <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
           <Tab label="Game Variations" />
           <Tab label="Visual Themes" />
@@ -92,61 +118,135 @@ export const SettingsPage = () => {
       </Box>
 
       {activeTab === 0 && (
-        <Box>
+        <Box sx={{ display: "grid", gap: 3 }}>
           {variationsError && (
-            <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText, mb: 2 }}>
+            <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
               {variationsError}
             </Typography>
           )}
-          
           <VariationEditor
-            initialData={editingVariation ? variations.find(v => v.id === editingVariation) : undefined}
+            initialData={editingVariation}
             onSave={async (data) => {
-              if (editingVariation) {
-                await updateVariation(editingVariation, data);
-                setEditingVariation(null);
-              } else {
-                await createVariation(data);
+              if (editingVariationId) {
+                await updateVariation(editingVariationId, data);
+                setEditingVariationId(null);
+                return;
               }
+              await createVariation(data);
             }}
-            onCancel={editingVariation ? () => setEditingVariation(null) : undefined}
+            onCancel={editingVariationId ? () => setEditingVariationId(null) : undefined}
           />
-
-          <Box sx={{ mt: 4 }}>
+          <Box>
             <Typography variant="h5" gutterBottom>
               Saved Variations
             </Typography>
-            <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText, mb: 2 }}>
-              You have {variations.length} variation(s).
-            </Typography>
-            {variations.map((variation) => (
+            {variations.length === 0 ? (
+              <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+                No saved variations yet.
+              </Typography>
+            ) : (
               <Box
-                key={variation.id}
                 sx={{
-                  p: 2,
-                  mb: 2,
-                  border: "1px solid",
-                  borderColor: (theme) => theme.ui.gameBoard.border,
-                  borderRadius: 1
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                  gap: 2
                 }}
               >
-                <Typography variant="h6">{variation.name}</Typography>
-                <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText, mb: 1 }}>
-                  {variation.description}
-                </Typography>
-                <Typography variant="caption">
-                  Difficulty: {variation.difficulty} | Used: {variation.usageCount} times
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  <AppButton onClick={() => setEditingVariation(variation.id)} sx={{ mr: 1 }}>
-                    Edit
-                  </AppButton>
-                  <AppButton onClick={() => deleteVariation(variation.id)}>
-                    Delete
-                  </AppButton>
-                </Box>
+                {variations.map((variation) => {
+                  const isActive = activeVariationId === variation.id;
+                  return (
+                    <Card
+                      key={variation.id}
+                      sx={{
+                        position: "relative",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          boxShadow: 4,
+                          transform: "translateY(-2px)"
+                        }
+                      }}
+                    >
+                      {isActive && (
+                        <Chip
+                          label="Active"
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            zIndex: 1
+                          }}
+                        />
+                      )}
+
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {variation.name}
+                        </Typography>
+                        {variation.description ? (
+                          <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+                            {variation.description}
+                          </Typography>
+                        ) : null}
+                        <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText, mt: 1 }}>
+                          Difficulty: {variation.difficulty ?? "medium"} | Speed: {variation.baseSpeed}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+                          Grid: {variation.gridSize} | Foods: {variation.maxConcurrentFoods}
+                        </Typography>
+                        <Box sx={{ mt: 1, display: "flex", gap: 0.5 }}>
+                          {variation.powerupTypes.slice(0, 5).map((powerup, index) => (
+                            <Box
+                              key={`${variation.id}-swatch-${index}`}
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: 0.5,
+                                border: "1px solid",
+                                borderColor: (theme) => theme.ui.shared.panelBorder,
+                                bgcolor: powerup.color
+                              }}
+                              title={`${powerup.effect} (${powerup.value})`}
+                            />
+                          ))}
+                        </Box>
+                      </CardContent>
+                      <CardActions sx={{ justifyContent: "flex-end", px: 2, pb: 2, pt: 0 }}>
+                        <IconActionButton
+                          size="small"
+                          variant="outlined"
+                          tone="neutral"
+                          icon={<approvedIcons.edit />}
+                          label={`Edit ${variation.name}`}
+                          iconOnly
+                          onClick={() => setEditingVariationId(variation.id)}
+                        />
+                        <IconActionButton
+                          size="small"
+                          variant="contained"
+                          tone="primary"
+                          icon={<approvedIcons.check />}
+                          label={isActive ? `${variation.name} is active` : `Activate ${variation.name}`}
+                          iconOnly
+                          disabled={isActive}
+                          onClick={() => void handleActivateVariation(variation.id)}
+                        />
+                        <IconActionButton
+                          size="small"
+                          variant="text"
+                          tone="danger"
+                          icon={<approvedIcons.delete />}
+                          label={`Delete ${variation.name}`}
+                          iconOnly
+                          onClick={() => void handleDeleteVariation(variation.id)}
+                        />
+                      </CardActions>
+                    </Card>
+                  );
+                })}
               </Box>
-            ))}
+            )}
           </Box>
         </Box>
       )}
@@ -158,15 +258,13 @@ export const SettingsPage = () => {
               {error}
             </Typography>
           )}
-
           <Box>
             <ThemeEditor
               theme={editingTheme || undefined}
               onSave={handleSaveFromEditor}
-              onCancel={editingTheme ? handleCancelEdit : undefined}
+              onCancel={editingTheme ? () => setEditingTheme(null) : undefined}
             />
           </Box>
-
           <Box>
             <Typography variant="h5" gutterBottom>
               Saved Themes
@@ -177,7 +275,7 @@ export const SettingsPage = () => {
               onActivate={async (id) => {
                 await activateTheme(id);
               }}
-              onEdit={handleEdit}
+              onEdit={setEditingTheme}
               onDelete={async (id) => {
                 await deleteTheme(id);
               }}

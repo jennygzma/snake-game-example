@@ -3,15 +3,18 @@ import type { CustomTheme } from "@snake/contracts";
 import { accessibilityTokens, gameTokens } from "./tokens";
 import "./themeExtensions";
 
-const hexToRgba = (hex: string, alpha: number, fallback: string): string => {
+const hexToRgba = (hex: string, alpha: number): string | null => {
   const normalized = hex.replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return fallback;
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
 
   const r = Number.parseInt(normalized.slice(0, 2), 16);
   const g = Number.parseInt(normalized.slice(2, 4), 16);
   const b = Number.parseInt(normalized.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+const colorWithAlpha = (value: string, alpha: number, fallback: string): string =>
+  hexToRgba(value, alpha) ?? hexToRgba(fallback, alpha) ?? fallback;
 
 /**
  * Convert a CustomTheme to a Material-UI theme object
@@ -72,7 +75,7 @@ export const createThemeFromCustom = (customTheme: CustomTheme): Theme => {
         topBarBg: colors.panel,
         topBarBorder: colors.panelBorder,
         topBarShadow: gameTokens.shadow.panel,
-        profileHoverBg: hexToRgba(colors.text, 0.08, "rgba(0, 0, 0, 0.08)"),
+        profileHoverBg: colorWithAlpha(colors.text, 0.08, gameTokens.colors.text),
         profileAvatarBg: colors.action,
         profileNameText: colors.text,
         iconActiveColor: colors.action,
@@ -83,8 +86,8 @@ export const createThemeFromCustom = (customTheme: CustomTheme): Theme => {
       },
       feedback: {
         errorText: colors.danger,
-        errorBg: hexToRgba(colors.danger, 0.1, "rgba(170, 44, 44, 0.1)"),
-        errorBorder: hexToRgba(colors.danger, 0.35, "rgba(170, 44, 44, 0.35)")
+        errorBg: colorWithAlpha(colors.danger, 0.1, gameTokens.colors.danger),
+        errorBorder: colorWithAlpha(colors.danger, 0.35, gameTokens.colors.danger)
       },
       profile: {
         activeChipBg: colors.action,
@@ -102,7 +105,7 @@ export const createThemeFromCustom = (customTheme: CustomTheme): Theme => {
       profilePicker: {
         newCardBorder: colors.panelBorder,
         newCardHoverBorder: colors.action,
-        newCardHoverBg: hexToRgba(colors.action, 0.1, "rgba(0, 0, 0, 0.06)"),
+        newCardHoverBg: colorWithAlpha(colors.action, 0.1, gameTokens.colors.action),
         mutedText: colors.textMuted
       },
       avatarUpload: {
@@ -113,8 +116,8 @@ export const createThemeFromCustom = (customTheme: CustomTheme): Theme => {
       },
       dialog: {
         descriptionText: colors.textMuted,
-        warningBg: hexToRgba(colors.danger, 0.1, "rgba(170, 44, 44, 0.1)"),
-        warningBorder: hexToRgba(colors.danger, 0.35, "rgba(170, 44, 44, 0.35)"),
+        warningBg: colorWithAlpha(colors.danger, 0.1, gameTokens.colors.danger),
+        warningBorder: colorWithAlpha(colors.danger, 0.35, gameTokens.colors.danger),
         warningTitle: colors.danger,
         warningBody: colors.textMuted,
         destructiveButtonBg: colors.danger,
@@ -256,14 +259,14 @@ export const getDefaultTheme = (): Theme => {
       dangerText: gameTokens.colors.dangerText
     },
     icons: {
-      default: "#ffffff"
+      default: gameTokens.colors.actionText
     },
     ui: {
       nav: {
         topBarBg: gameTokens.colors.panel,
         topBarBorder: gameTokens.colors.panelBorder,
         topBarShadow: gameTokens.shadow.panel,
-        profileHoverBg: "rgba(23, 32, 24, 0.08)",
+        profileHoverBg: colorWithAlpha(gameTokens.colors.text, 0.08, gameTokens.colors.text),
         profileAvatarBg: gameTokens.colors.action,
         profileNameText: gameTokens.colors.text,
         iconActiveColor: gameTokens.colors.action,
@@ -274,8 +277,8 @@ export const getDefaultTheme = (): Theme => {
       },
       feedback: {
         errorText: gameTokens.colors.danger,
-        errorBg: "rgba(170, 44, 44, 0.1)",
-        errorBorder: "rgba(170, 44, 44, 0.35)"
+        errorBg: colorWithAlpha(gameTokens.colors.danger, 0.1, gameTokens.colors.danger),
+        errorBorder: colorWithAlpha(gameTokens.colors.danger, 0.35, gameTokens.colors.danger)
       },
       profile: {
         activeChipBg: gameTokens.colors.action,
@@ -293,7 +296,7 @@ export const getDefaultTheme = (): Theme => {
       profilePicker: {
         newCardBorder: gameTokens.colors.panelBorder,
         newCardHoverBorder: gameTokens.colors.action,
-        newCardHoverBg: "rgba(31, 109, 47, 0.1)",
+        newCardHoverBg: colorWithAlpha(gameTokens.colors.action, 0.1, gameTokens.colors.action),
         mutedText: gameTokens.colors.textMuted
       },
       avatarUpload: {
@@ -304,8 +307,8 @@ export const getDefaultTheme = (): Theme => {
       },
       dialog: {
         descriptionText: gameTokens.colors.textMuted,
-        warningBg: "rgba(170, 44, 44, 0.1)",
-        warningBorder: "rgba(170, 44, 44, 0.35)",
+        warningBg: colorWithAlpha(gameTokens.colors.danger, 0.1, gameTokens.colors.danger),
+        warningBorder: colorWithAlpha(gameTokens.colors.danger, 0.35, gameTokens.colors.danger),
         warningTitle: gameTokens.colors.danger,
         warningBody: gameTokens.colors.textMuted,
         destructiveButtonBg: gameTokens.colors.danger,

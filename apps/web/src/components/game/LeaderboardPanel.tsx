@@ -11,9 +11,14 @@ const formatEndedAt = (value: string): string => {
 type LeaderboardPanelProps = {
   entries: LeaderboardEntry[];
   showProfileName?: boolean;
+  showVariationName?: boolean;
 };
 
-export const LeaderboardPanel = ({ entries, showProfileName = false }: LeaderboardPanelProps) => {
+export const LeaderboardPanel = ({
+  entries,
+  showProfileName = false,
+  showVariationName = false
+}: LeaderboardPanelProps) => {
   const theme = useTheme();
 
   return (
@@ -30,7 +35,14 @@ export const LeaderboardPanel = ({ entries, showProfileName = false }: Leaderboa
               key={`${entry.rank}-${entry.userId}-${entry.endedAt}`}
               sx={{
                 display: "grid",
-                gridTemplateColumns: showProfileName ? "48px 1fr 1fr auto" : "48px 1fr auto",
+                gridTemplateColumns:
+                  showProfileName && showVariationName
+                    ? "48px 1fr 1fr 1fr auto"
+                    : showProfileName
+                      ? "48px 1fr 1fr auto"
+                      : showVariationName
+                        ? "48px 1fr 1fr auto"
+                        : "48px 1fr auto",
                 alignItems: "center",
                 gap: 1,
                 py: 1
@@ -42,6 +54,11 @@ export const LeaderboardPanel = ({ entries, showProfileName = false }: Leaderboa
               {showProfileName && (
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {entry.profileName}
+                </Typography>
+              )}
+              {showVariationName && (
+                <Typography variant="body2" sx={{ color: theme.ui.leaderboard.mutedText }}>
+                  {entry.variationName ?? "Classic"}
                 </Typography>
               )}
               <Typography variant="body2">{entry.score} pts</Typography>

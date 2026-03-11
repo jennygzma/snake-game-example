@@ -3,7 +3,7 @@ import type { Profile, CreateProfileInput, UpdateProfileInput } from "@snake/con
 import { apiProfileService } from "../services/adapters/apiProfileService";
 import { localProfileService } from "../services/storage/localProfileService";
 
-const USE_API = import.meta.env.VITE_USE_API === "true";
+const USE_API = import.meta.env.VITE_GAME_SERVICE_MODE !== "local";
 const profileService = USE_API ? apiProfileService : localProfileService;
 
 interface ProfileContextValue {

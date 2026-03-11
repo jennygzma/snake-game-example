@@ -6,16 +6,29 @@ type GameBoardProps = {
   snake: Cell[];
   foods: FoodItem[];
   snakeHeadImage?: string;
+  boardBackgroundColor?: string;
+  snakeColor?: string;
+  snakeHeadColor?: string;
+  boardGridColor?: string;
 };
 
 const toKey = (cell: Cell): string => `${cell.x}:${cell.y}`;
 
-export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardProps) => {
+export const GameBoard = ({
+  gridSize,
+  snake,
+  foods,
+  snakeHeadImage,
+  boardBackgroundColor,
+  snakeColor,
+  snakeHeadColor,
+  boardGridColor
+}: GameBoardProps) => {
   const theme = useTheme();
   const snakeSet = new Set(snake.map(toKey));
   const head = snake[0];
   const snakeHeadKey = head ? toKey(head) : "";
-  const foodMap = new Map(foods.map(f => [toKey(f.position), f.color]));
+  const foodMap = new Map(foods.map((food) => [toKey(food.position), food]));
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => ({
     x: index % gridSize,
     y: Math.floor(index / gridSize)
@@ -33,13 +46,13 @@ export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardP
         borderColor: theme.ui.gameBoard.border,
         borderRadius: 1,
         overflow: "hidden",
-        backgroundColor: theme.game.boardBg
+        backgroundColor: boardBackgroundColor || theme.game.boardBg
       }}
     >
       {cells.map((cell) => {
         const key = toKey(cell);
-        const foodColor = foodMap.get(key);
-        const isFood = foodColor !== undefined;
+        const food = foodMap.get(key);
+        const isFood = food !== undefined;
         const isSnake = snakeSet.has(key);
         const isHead = key === snakeHeadKey;
 
@@ -48,14 +61,19 @@ export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardP
             key={key}
             sx={{
               border: `1px solid ${theme.game.boardGrid}`,
+              borderColor: boardGridColor || theme.game.boardGrid,
               backgroundColor: isHead
-                ? theme.game.snakeHead
+                ? snakeHeadColor || theme.game.snakeHead
                 : isSnake
-                  ? theme.game.snake
+                  ? snakeColor || theme.game.snake
                   : isFood
-                    ? foodColor
+                    ? food?.color
                     : "transparent",
-              backgroundImage: isHead && snakeHeadImage ? `url(${snakeHeadImage})` : undefined,
+              backgroundImage: isHead && snakeHeadImage
+                ? `url(${snakeHeadImage})`
+                : isFood && food?.image
+                  ? `url(${food.image})`
+                  : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center"
             }}

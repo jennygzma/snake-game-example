@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Slider,
+  Stack,
   TextField,
   Typography,
-  Stack,
-  Slider,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  IconButton,
   useTheme
 } from "@mui/material";
 import type { GameVariationInput, PowerupType } from "@snake/contracts";
+import { IconActionButton } from "../shared/IconActionButton";
 import { Panel } from "../shared/Panel";
 import { AppButton } from "../shared/AppButton";
-import { IconActionButton } from "../shared/IconActionButton";
-import { approvedIcons } from "../../theme/approvedIcons";
 import { ColorPickerField } from "./ColorPickerField";
+import { approvedIcons } from "../../theme/approvedIcons";
 
 type VariationEditorProps = {
   initialData?: GameVariationInput;
@@ -28,10 +28,16 @@ type VariationEditorProps = {
 const POWERUP_EFFECTS = [
   { value: "speed_increase", label: "Speed Increase" },
   { value: "speed_decrease", label: "Speed Decrease" },
-  { value: "add_blocks", label: "Add Blocks" },
-  { value: "subtract_blocks", label: "Subtract Blocks" },
-  { value: "double_points", label: "Double Points" }
+  { value: "add_blocks", label: "Length Increase" },
+  { value: "subtract_blocks", label: "Length Decrease" },
+  { value: "double_points", label: "Extra Points" }
 ] as const;
+
+const powerupDefaultForTheme = (defaultFoodColor: string): PowerupType => ({
+  effect: "double_points",
+  value: 2,
+  color: defaultFoodColor
+});
 
 export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEditorProps) => {
   const theme = useTheme();
@@ -40,41 +46,53 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
     initialData?.difficulty || "medium"
   );
-  const [maxConcurrentFoods, setMaxConcurrentFoods] = useState(
-    initialData?.maxConcurrentFoods || 1
-  );
-  const [baseSpeed, setBaseSpeed] = useState(initialData?.baseSpeed || 10);
+  const [maxConcurrentFoods, setMaxConcurrentFoods] = useState(initialData?.maxConcurrentFoods || 1);
+  const [baseSpeed, setBaseSpeed] = useState(initialData?.baseSpeed || 8);
   const [gridSize, setGridSize] = useState(initialData?.gridSize || 20);
   const [powerups, setPowerups] = useState<PowerupType[]>(
-    initialData?.powerupTypes || [
-      { effect: "double_points", value: 2, color: "#FDB813" }
-    ]
+    initialData?.powerupTypes || [powerupDefaultForTheme(theme.game.food)]
   );
-  const [snakeHeadImage, setSnakeHeadImage] = useState<string | undefined>(
-    initialData?.snakeHeadImage
-  );
+  const [snakeHeadImage, setSnakeHeadImage] = useState<string | undefined>(initialData?.snakeHeadImage);
+  const [customColors, setCustomColors] = useState(initialData?.customColors);
+  const snakeHeadInputRef = useRef<HTMLInputElement | null>(null);
+  const foodImageInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    setName(initialData?.name || "");
+    setDescription(initialData?.description || "");
+    setDifficulty(initialData?.difficulty || "medium");
+    setMaxConcurrentFoods(initialData?.maxConcurrentFoods || 1);
+    setBaseSpeed(initialData?.baseSpeed || 8);
+    setGridSize(initialData?.gridSize || 20);
+    setPowerups(initialData?.powerupTypes || [powerupDefaultForTheme(theme.game.food)]);
+    setSnakeHeadImage(initialData?.snakeHeadImage);
+    setCustomColors(initialData?.customColors);
+  }, [initialData, theme.game.food]);
 
   const handleAddPowerup = () => {
-    setPowerups([
-      ...powerups,
-      { effect: "speed_increase", value: 1, color: "#87ae73" }
-    ]);
+    setPowerups((current) => [...current, powerupDefaultForTheme(theme.game.food)]);
   };
 
   const handleRemovePowerup = (index: number) => {
-    setPowerups(powerups.filter((_, i) => i !== index));
+    setPowerups((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
-  const handlePowerupChange = (
-    index: number,
-    field: keyof PowerupType,
-    value: string | number
-  ) => {
-    const updated = [...powerups];
-    if (updated[index]) {
-      updated[index] = { ...updated[index]!, [field]: value };
-      setPowerups(updated);
-    }
+  const handlePowerupChange = (index: number, field: keyof PowerupType, value: string | number) => {
+    setPowerups((current) =>
+      current.map((powerup, currentIndex) =>
+        currentIndex === index ? { ...powerup, [field]: value } : powerup
+      )
+    );
+  };
+
+  const handlePowerupImageUpload = (index: number, file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = typeof event.target?.result === "string" ? event.target.result : undefined;
+      handlePowerupChange(index, "image", result ?? "");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = () => {
@@ -84,27 +102,26 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
 
     onSave({
       name: name.trim(),
-      description: description.trim(),
+      description: description.trim() || undefined,
       difficulty,
       maxConcurrentFoods,
       baseSpeed,
       gridSize,
       powerupTypes: powerups,
-      snakeHeadImage
+      snakeHeadImage,
+      customColors
     });
   };
 
   return (
     <Panel>
       <Stack spacing={3}>
-        <Typography variant="h5">
-          {initialData ? "Edit Variation" : "Create New Variation"}
-        </Typography>
+        <Typography variant="h5">{initialData ? "Edit Variation" : "Create New Variation"}</Typography>
 
         <TextField
           label="Variation Name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(event) => setName(event.target.value)}
           fullWidth
           required
           aria-label="Variation name"
@@ -113,7 +130,7 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
         <TextField
           label="Description"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(event) => setDescription(event.target.value)}
           fullWidth
           multiline
           rows={2}
@@ -124,7 +141,7 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
           <InputLabel>Difficulty</InputLabel>
           <Select
             value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as "easy" | "medium" | "hard")}
+            onChange={(event) => setDifficulty(event.target.value as "easy" | "medium" | "hard")}
             label="Difficulty"
             aria-label="Difficulty level"
           >
@@ -135,14 +152,12 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
         </FormControl>
 
         <Box>
-          <Typography gutterBottom>
-            Max Concurrent Foods: {maxConcurrentFoods}
-          </Typography>
+          <Typography gutterBottom>Max Concurrent Foods: {maxConcurrentFoods}</Typography>
           <Slider
             value={maxConcurrentFoods}
             onChange={(_, value) => setMaxConcurrentFoods(value as number)}
             min={1}
-            max={5}
+            max={10}
             marks
             valueLabelDisplay="auto"
             aria-label="Maximum concurrent foods"
@@ -154,8 +169,8 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
           <Slider
             value={baseSpeed}
             onChange={(_, value) => setBaseSpeed(value as number)}
-            min={5}
-            max={20}
+            min={1}
+            max={30}
             marks
             valueLabelDisplay="auto"
             aria-label="Base game speed"
@@ -167,8 +182,8 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
           <Slider
             value={gridSize}
             onChange={(_, value) => setGridSize(value as number)}
-            min={10}
-            max={30}
+            min={8}
+            max={64}
             step={2}
             marks
             valueLabelDisplay="auto"
@@ -176,26 +191,46 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
           />
         </Box>
 
+        <Stack spacing={1}>
+          <Typography variant="h6">Visual Customization</Typography>
+          <ColorPickerField
+            label="Snake Color"
+            value={customColors?.snake || theme.game.snake}
+            onChange={(value) => setCustomColors((current) => ({ ...(current || {}), snake: value }))}
+          />
+          <ColorPickerField
+            label="Snake Head Color"
+            value={customColors?.snakeHead || theme.game.snakeHead}
+            onChange={(value) => setCustomColors((current) => ({ ...(current || {}), snakeHead: value }))}
+          />
+          <ColorPickerField
+            label="Board Background"
+            value={customColors?.boardBg || theme.game.boardBg}
+            onChange={(value) => setCustomColors((current) => ({ ...(current || {}), boardBg: value }))}
+          />
+          <ColorPickerField
+            label="Board Grid"
+            value={customColors?.boardGrid || theme.game.boardGrid}
+            onChange={(value) => setCustomColors((current) => ({ ...(current || {}), boardGrid: value }))}
+          />
+        </Stack>
+
         <Box>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-            <Typography variant="h6">Powerups</Typography>
-            <IconActionButton
-              onClick={handleAddPowerup}
-              label="Add"
-              icon={<approvedIcons.add />}
-            />
+            <Typography variant="h6">Food Types and Powerups</Typography>
+            <IconActionButton onClick={handleAddPowerup} label="Add food type" icon={<approvedIcons.add />} />
           </Box>
 
           <Stack spacing={2}>
             {powerups.map((powerup, index) => (
-              <Panel key={index} sx={{ bgcolor: theme.ui.gameBoard.border, opacity: 0.1 }}>
+              <Panel key={`${powerup.effect}-${index}`} sx={{ borderColor: (muiTheme) => muiTheme.ui.shared.panelBorder }}>
                 <Stack spacing={2}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Typography variant="subtitle2">Powerup {index + 1}</Typography>
+                    <Typography variant="subtitle2">Food Type {index + 1}</Typography>
                     <IconButton
                       onClick={() => handleRemovePowerup(index)}
                       size="small"
-                      aria-label={`Remove powerup ${index + 1}`}
+                      aria-label={`Remove food type ${index + 1}`}
                     >
                       <approvedIcons.delete />
                     </IconButton>
@@ -205,9 +240,7 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
                     <InputLabel>Effect</InputLabel>
                     <Select
                       value={powerup.effect}
-                      onChange={(e) =>
-                        handlePowerupChange(index, "effect", e.target.value)
-                      }
+                      onChange={(event) => handlePowerupChange(index, "effect", event.target.value)}
                       label="Effect"
                       aria-label={`Powerup ${index + 1} effect type`}
                     >
@@ -220,22 +253,59 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
                   </FormControl>
 
                   <TextField
-                    label="Value"
+                    label="Effect Value"
                     type="number"
                     value={powerup.value}
-                    onChange={(e) =>
-                      handlePowerupChange(index, "value", Number(e.target.value))
-                    }
+                    onChange={(event) => handlePowerupChange(index, "value", Number(event.target.value))}
                     fullWidth
                     inputProps={{ min: 1, max: 10 }}
                     aria-label={`Powerup ${index + 1} value`}
                   />
 
                   <ColorPickerField
-                    label="Color"
+                    label="Food Color"
                     value={powerup.color}
-                    onChange={(color) => handlePowerupChange(index, "color", color)}
+                    onChange={(value) => handlePowerupChange(index, "color", value)}
                   />
+
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Food Image (Optional)
+                    </Typography>
+                    <input
+                      ref={(element) => {
+                        foodImageInputRefs.current[index] = element;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(event) => handlePowerupImageUpload(index, event.target.files?.[0])}
+                      aria-label={`Upload image for food type ${index + 1}`}
+                    />
+                    <IconActionButton
+                      variant="outlined"
+                      tone="neutral"
+                      icon={<approvedIcons.photoCamera />}
+                      label={`Choose image for food type ${index + 1}`}
+                      onClick={() => foodImageInputRefs.current[index]?.click()}
+                    />
+                    {powerup.image ? (
+                      <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                        <img
+                          src={powerup.image}
+                          alt={`Food type ${index + 1} preview`}
+                          style={{ maxWidth: "48px", maxHeight: "48px", display: "block" }}
+                        />
+                        <AppButton
+                          variant="outlined"
+                          tone="neutral"
+                          onClick={() => handlePowerupChange(index, "image", "")}
+                        >
+                          Remove image
+                        </AppButton>
+                      </Box>
+                    ) : null}
+                  </Box>
                 </Stack>
               </Panel>
             ))}
@@ -246,53 +316,53 @@ export const VariationEditor = ({ initialData, onSave, onCancel }: VariationEdit
           <Typography variant="h6" gutterBottom>
             Snake Head Image (Optional)
           </Typography>
-          <Typography variant="body2" sx={{ color: theme.ui.leaderboard.mutedText, mb: 1 }}>
-            Upload a custom image for the snake head. Leave empty to use default.
-          </Typography>
-          {snakeHeadImage && (
+          {snakeHeadImage ? (
             <Box sx={{ mb: 2 }}>
               <img
                 src={snakeHeadImage}
                 alt="Snake head preview"
                 style={{ maxWidth: "100px", maxHeight: "100px", display: "block" }}
               />
-              <AppButton
-                onClick={() => setSnakeHeadImage(undefined)}
-                sx={{ mt: 1 }}
-              >
-                Remove Image
+              <AppButton variant="outlined" tone="neutral" onClick={() => setSnakeHeadImage(undefined)} sx={{ mt: 1 }}>
+                Remove image
               </AppButton>
             </Box>
-          )}
-          {!snakeHeadImage && (
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    setSnakeHeadImage(event.target?.result as string);
-                  };
-                  reader.readAsDataURL(file);
+          ) : null}
+          <input
+            ref={snakeHeadInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (loadEvent) => {
+                const result = loadEvent.target?.result;
+                if (typeof result === "string") {
+                  setSnakeHeadImage(result);
                 }
-              }}
-              aria-label="Upload snake head image"
-            />
-          )}
+              };
+              reader.readAsDataURL(file);
+            }}
+            aria-label="Upload snake head image"
+          />
+          <IconActionButton
+            variant="outlined"
+            tone="neutral"
+            icon={<approvedIcons.photoCamera />}
+            label="Choose snake head image"
+            onClick={() => snakeHeadInputRef.current?.click()}
+          />
         </Box>
 
         <Stack direction="row" spacing={2} justifyContent="flex-end">
-          {onCancel && (
-            <AppButton onClick={onCancel}>
+          {onCancel ? (
+            <AppButton tone="neutral" variant="outlined" onClick={onCancel}>
               Cancel
             </AppButton>
-          )}
-          <AppButton
-            onClick={handleSubmit}
-            disabled={!name.trim() || powerups.length === 0}
-          >
+          ) : null}
+          <AppButton onClick={handleSubmit} disabled={!name.trim() || powerups.length === 0}>
             Save Variation
           </AppButton>
         </Stack>

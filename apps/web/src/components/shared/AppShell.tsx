@@ -52,7 +52,7 @@ export const AppShell = ({ children }: AppShellProps) => {
                 label="Design"
                 active={location.pathname === "/design"}
                 onClick={() => navigate("/design")}
-                icon={<approvedIcons.settings />}
+                icon={<approvedIcons.edit />}
                 activeColor={theme.icons.settingsActive ?? theme.icons.active ?? theme.ui.nav.iconActiveColor}
                 inactiveColor={theme.icons.settings || theme.icons.default}
               />

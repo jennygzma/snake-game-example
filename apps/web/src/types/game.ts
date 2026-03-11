@@ -16,6 +16,7 @@ export type FoodItem = {
   effect: PowerupEffect;
   value: number;
   color: string;
+  image?: string;
 };
 
 export type ActiveEffect = {

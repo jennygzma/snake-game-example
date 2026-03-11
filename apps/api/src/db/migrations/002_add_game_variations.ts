@@ -13,8 +13,9 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "crypto";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const DB_PATH = path.join(process.cwd(), "apps/api/snake.db");
+const DB_PATH = process.env.SNAKE_DB_PATH ?? path.join(process.cwd(), "apps/api/src/data/snake.db");
 
 function runMigration() {
   console.log("🔄 Starting game variations migration...");
@@ -135,8 +136,10 @@ function runMigration() {
   }
 }
 
-// Run the migration if this file is executed directly
-if (require.main === module) {
+const isDirectExecution =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectExecution) {
   runMigration();
 }
 

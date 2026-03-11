@@ -6,7 +6,7 @@ import { apiThemeService } from "../services/adapters/apiThemeService";
 import { localThemeService } from "../services/storage/localThemeService";
 import { useAppProfile } from "./ProfileContext";
 
-const USE_API = import.meta.env.VITE_USE_API === "true";
+const USE_API = import.meta.env.VITE_GAME_SERVICE_MODE !== "local";
 const themeService = USE_API ? apiThemeService : localThemeService;
 
 interface ThemeContextValue {

@@ -20,6 +20,7 @@ import type { GameService } from "../gameService";
 const PROFILES_KEY = "snake.profiles";
 const RUNS_KEY = "snake.runs";
 const SETTINGS_BY_PROFILE_KEY = "snake.settings.by_profile";
+const VARIATIONS_KEY = "snake_game_variations";
 
 const readProfiles = (): Profile[] => {
   const raw = localStorage.getItem(PROFILES_KEY);
@@ -53,6 +54,30 @@ const readRuns = (): RunRecord[] => {
     return recentRunsResponseSchema.parse({ runs: JSON.parse(raw) }).runs;
   } catch {
     return [];
+  }
+};
+
+const readVariationNamesById = (): Map<string, string> => {
+  const raw = localStorage.getItem(VARIATIONS_KEY);
+  if (!raw) return new Map();
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Map();
+    const names = new Map<string, string>();
+    for (const variation of parsed) {
+      if (
+        variation &&
+        typeof variation === "object" &&
+        typeof variation.id === "string" &&
+        typeof variation.name === "string"
+      ) {
+        names.set(variation.id, variation.name);
+      }
+    }
+    return names;
+  } catch {
+    return new Map();
   }
 };
 
@@ -95,11 +120,13 @@ export const localGameService: GameService = {
     return highScoreResponseSchema.parse({ highScore }) satisfies HighScoreResponse;
   },
 
-  async getLeaderboard(limit: number, scope: "active" | "global" = "active") {
+  async getLeaderboard(limit: number, scope: "active" | "global" = "active", variationId?: string) {
     const activeProfile = getActiveProfile();
     const profileNameById = new Map(readProfiles().map((profile) => [profile.id, profile.name]));
+    const variationNameById = readVariationNamesById();
     const entries = readRuns()
       .filter((run) => (scope === "global" ? true : run.userId === activeProfile.id))
+      .filter((run) => (variationId ? run.variationId === variationId : true))
       .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
       .slice(0, Math.max(1, limit))
       .map((run, index) => ({
@@ -107,7 +134,8 @@ export const localGameService: GameService = {
         userId: run.userId,
         profileName: profileNameById.get(run.userId) ?? "Player",
         score: run.score,
-        endedAt: run.endedAt
+        endedAt: run.endedAt,
+        variationName: run.variationId ? variationNameById.get(run.variationId) : undefined
       }));
 
     return leaderboardResponseSchema.parse({ entries }) satisfies LeaderboardResponse;

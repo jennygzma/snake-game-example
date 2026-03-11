@@ -72,13 +72,43 @@ export const ProfilePage = () => {
     await activateProfile(created.id);
   };
 
-  if (isLoading || !activeProfile) {
+  if (isLoading) {
     return (
       <PageLayout>
         <Typography variant="h4" component="h1" gutterBottom>
           Profile
         </Typography>
         <Typography>Loading...</Typography>
+      </PageLayout>
+    );
+  }
+
+  if (!activeProfile) {
+    return (
+      <PageLayout>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Profiles
+        </Typography>
+        {profiles.length === 0 ? (
+          <Typography>No profiles found.</Typography>
+        ) : (
+          <Stack spacing={2}>
+            <Typography variant="body2" sx={{ color: theme.ui.leaderboard.mutedText }}>
+              Choose a profile to activate:
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              {profiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onSelect={async (selected) => {
+                    await activateProfile(selected.id);
+                  }}
+                />
+              ))}
+            </Box>
+          </Stack>
+        )}
       </PageLayout>
     );
   }

@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, type GameSettings, type RunRecordInput, type RunRecor
 type RunRow = {
   id: string;
   profile_id: string;
+  variation_id: string | null;
   score: number;
   duration_ms: number;
   ended_at: string;
@@ -100,7 +101,7 @@ export const gameQueries = (db: Database) => ({
     const safeLimit = Math.max(1, limit);
     const rows = db
       .prepare(
-        `SELECT id, profile_id, score, duration_ms, ended_at
+        `SELECT id, profile_id, variation_id, score, duration_ms, ended_at
          FROM game_runs
          WHERE profile_id = ?
          ORDER BY datetime(ended_at) DESC
@@ -113,36 +114,39 @@ export const gameQueries = (db: Database) => ({
       userId: row.profile_id,
       score: row.score,
       durationMs: row.duration_ms,
-      endedAt: row.ended_at
+      endedAt: row.ended_at,
+      variationId: row.variation_id ?? undefined
     }));
   },
 
   getSettingsByProfileId(profileId: string): GameSettings {
     const row = db
       .prepare(
-        `SELECT speed, grid_size
+        `SELECT speed, grid_size, variation_id
          FROM game_settings
          WHERE profile_id = ?`
       )
-      .get(profileId) as { speed: number; grid_size: number } | undefined;
+      .get(profileId) as { speed: number; grid_size: number; variation_id: string | null } | undefined;
 
     if (!row) return DEFAULT_SETTINGS;
 
     return {
       speed: row.speed,
-      gridSize: row.grid_size
+      gridSize: row.grid_size,
+      variationId: row.variation_id ?? undefined
     };
   },
 
   saveSettingsByProfileId(profileId: string, settings: GameSettings): GameSettings {
     db.prepare(
-      `INSERT INTO game_settings (profile_id, speed, grid_size, updated_at)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO game_settings (profile_id, speed, grid_size, variation_id, updated_at)
+       VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(profile_id) DO UPDATE SET
          speed = excluded.speed,
          grid_size = excluded.grid_size,
+         variation_id = excluded.variation_id,
          updated_at = excluded.updated_at`
-    ).run(profileId, settings.speed, settings.gridSize, new Date().toISOString());
+    ).run(profileId, settings.speed, settings.gridSize, settings.variationId || null, new Date().toISOString());
 
     return settings;
   }

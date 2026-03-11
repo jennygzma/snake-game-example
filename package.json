@@ -10,7 +10,10 @@
     "dev:web": "npm --workspace @snake/web run dev",
     "dev:api": "npm --workspace @snake/api run dev",
     "build": "npm run build -ws",
-    "typecheck": "npm run typecheck -ws"
+    "typecheck": "npm run typecheck -ws",
+    "migrate:profiles": "npm --workspace @snake/api run migrate:profiles",
+    "migrate:variations": "npm --workspace @snake/api run migrate:variations",
+    "migrate:all": "npm run migrate:profiles && npm run migrate:variations"
   },
   "devDependencies": {
     "esbuild": "^0.27.3"

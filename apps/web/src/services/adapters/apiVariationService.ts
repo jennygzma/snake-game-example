@@ -73,14 +73,22 @@ export const apiVariationService: VariationService = {
   },
 
   async deleteVariation(id: string): Promise<void> {
-    await fetch(`${API_BASE_URL}/v1/variations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/v1/variations/${id}`, {
       method: "DELETE"
     });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`HTTP ${response.status}: ${text}`);
+    }
   },
 
   async incrementUsageCount(id: string): Promise<void> {
-    await fetch(`${API_BASE_URL}/v1/variations/${id}/increment-usage`, {
+    const response = await fetch(`${API_BASE_URL}/v1/variations/${id}/increment-usage`, {
       method: "POST"
     });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`HTTP ${response.status}: ${text}`);
+    }
   }
 };
