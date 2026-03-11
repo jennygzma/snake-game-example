@@ -45,9 +45,9 @@ export const apiGameService: GameService = {
     return request<HighScoreResponse>("/v1/scores/high", highScoreResponseSchema);
   },
 
-  getLeaderboard(limit: number) {
+  getLeaderboard(limit: number, scope: "active" | "global" = "active") {
     return request<LeaderboardResponse>(
-      `/v1/leaderboard?limit=${Math.max(1, limit)}`,
+      `/v1/leaderboard?limit=${Math.max(1, limit)}&scope=${scope}`,
       leaderboardResponseSchema
     );
   },

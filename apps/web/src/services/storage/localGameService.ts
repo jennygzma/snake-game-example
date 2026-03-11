@@ -17,22 +17,32 @@ import {
 } from "@snake/contracts";
 import type { GameService } from "../gameService";
 
-const PROFILE_KEY = "snake.profile";
+const PROFILES_KEY = "snake.profiles";
 const RUNS_KEY = "snake.runs";
-const SETTINGS_KEY = "snake.settings";
+const SETTINGS_BY_PROFILE_KEY = "snake.settings.by_profile";
 
-const ensureProfile = (): Profile => {
-  const raw = localStorage.getItem(PROFILE_KEY);
-  if (raw) {
-    const parsed = profileSchema.safeParse(JSON.parse(raw));
-    if (parsed.success) {
-      return parsed.data;
-    }
+const readProfiles = (): Profile[] => {
+  const raw = localStorage.getItem(PROFILES_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => profileSchema.safeParse(value))
+      .filter((result): result is { success: true; data: Profile } => result.success)
+      .map((result) => result.data);
+  } catch {
+    return [];
   }
+};
 
-  const profile: Profile = { id: crypto.randomUUID(), name: "Player" };
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  return profile;
+const getActiveProfile = (): Profile => {
+  const active = readProfiles().find((profile) => profile.isActive);
+  if (!active) {
+    throw new Error("No active profile found");
+  }
+  return active;
 };
 
 const readRuns = (): RunRecord[] => {
@@ -50,23 +60,52 @@ const writeRuns = (runs: RunRecord[]): void => {
   localStorage.setItem(RUNS_KEY, JSON.stringify(runs));
 };
 
+const readSettingsByProfile = (): Record<string, GameSettings> => {
+  const raw = localStorage.getItem(SETTINGS_BY_PROFILE_KEY);
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.entries(parsed).reduce<Record<string, GameSettings>>((acc, [profileId, value]) => {
+      const result = gameSettingsSchema.safeParse(value);
+      if (result.success) {
+        acc[profileId] = result.data;
+      }
+      return acc;
+    }, {});
+  } catch {
+    return {};
+  }
+};
+
+const writeSettingsByProfile = (settingsByProfile: Record<string, GameSettings>): void => {
+  localStorage.setItem(SETTINGS_BY_PROFILE_KEY, JSON.stringify(settingsByProfile));
+};
+
 export const localGameService: GameService = {
   async getProfile() {
-    return ensureProfile();
+    return getActiveProfile();
   },
 
   async getHighScore() {
-    const highScore = readRuns().reduce((best, run) => Math.max(best, run.score), 0);
+    const activeProfile = getActiveProfile();
+    const highScore = readRuns()
+      .filter((run) => run.userId === activeProfile.id)
+      .reduce((best, run) => Math.max(best, run.score), 0);
     return highScoreResponseSchema.parse({ highScore }) satisfies HighScoreResponse;
   },
 
-  async getLeaderboard(limit: number) {
+  async getLeaderboard(limit: number, scope: "active" | "global" = "active") {
+    const activeProfile = getActiveProfile();
+    const profileNameById = new Map(readProfiles().map((profile) => [profile.id, profile.name]));
     const entries = readRuns()
+      .filter((run) => (scope === "global" ? true : run.userId === activeProfile.id))
       .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
       .slice(0, Math.max(1, limit))
       .map((run, index) => ({
         rank: index + 1,
         userId: run.userId,
+        profileName: profileNameById.get(run.userId) ?? "Player",
         score: run.score,
         endedAt: run.endedAt
       }));
@@ -76,42 +115,38 @@ export const localGameService: GameService = {
 
   async saveRun(run: RunRecordInput) {
     const input = runRecordInputSchema.parse(run);
-    const profile = ensureProfile();
+    const activeProfile = getActiveProfile();
     const nextRun = runRecordSchema.parse({
       id: crypto.randomUUID(),
-      userId: profile.id,
+      userId: activeProfile.id,
       ...input
     });
 
-    const runs = [nextRun, ...readRuns()].slice(0, 100);
+    const runs = [nextRun, ...readRuns()].slice(0, 1000);
     writeRuns(runs);
     return nextRun;
   },
 
   async listRecentRuns(limit: number) {
-    return recentRunsResponseSchema.parse({
-      runs: readRuns().slice(0, Math.max(1, limit))
-    }) satisfies RecentRunsResponse;
+    const activeProfile = getActiveProfile();
+    const runs = readRuns()
+      .filter((run) => run.userId === activeProfile.id)
+      .slice(0, Math.max(1, limit));
+    return recentRunsResponseSchema.parse({ runs }) satisfies RecentRunsResponse;
   },
 
   async getSettings() {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-
-    try {
-      const parsed = JSON.parse(raw) as Partial<GameSettings>;
-      return gameSettingsSchema.parse({
-        speed: parsed.speed ?? DEFAULT_SETTINGS.speed,
-        gridSize: parsed.gridSize ?? DEFAULT_SETTINGS.gridSize
-      });
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
+    const activeProfile = getActiveProfile();
+    const settingsByProfile = readSettingsByProfile();
+    return settingsByProfile[activeProfile.id] ?? DEFAULT_SETTINGS;
   },
 
   async saveSettings(settings: GameSettings) {
     const payload = gameSettingsSchema.parse(settings);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
+    const activeProfile = getActiveProfile();
+    const settingsByProfile = readSettingsByProfile();
+    settingsByProfile[activeProfile.id] = payload;
+    writeSettingsByProfile(settingsByProfile);
     return payload;
   }
 };
