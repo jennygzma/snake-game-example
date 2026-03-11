@@ -23,11 +23,30 @@ const db = new Database(join(dataDir, "snake.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
-// Backward compatibility for older databases created before variation support.
-const gameRunsColumns = db.pragma("table_info(game_runs)") as Array<{ name: string }>;
-if (gameRunsColumns.length > 0 && !gameRunsColumns.some((col) => col.name === "variation_id")) {
-  db.exec("ALTER TABLE game_runs ADD COLUMN variation_id TEXT;");
-}
+const hasColumn = (tableName: string, columnName: string): boolean => {
+  const columns = db.pragma(`table_info(${tableName})`) as Array<{ name: string }>;
+  return columns.some((column) => column.name === columnName);
+};
+
+const ensureColumn = (tableName: string, columnName: string, definition: string): void => {
+  const columns = db.pragma(`table_info(${tableName})`) as Array<{ name: string }>;
+  if (columns.length === 0 || hasColumn(tableName, columnName)) {
+    return;
+  }
+  db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition};`);
+};
+
+// Backward compatibility for older databases before profile/theme/variation migrations.
+ensureColumn("profiles", "is_active", "INTEGER NOT NULL DEFAULT 0");
+ensureColumn("custom_themes", "user_id", "TEXT");
+ensureColumn("custom_themes", "profile_id", "TEXT");
+ensureColumn("custom_themes", "is_active", "INTEGER NOT NULL DEFAULT 0");
+ensureColumn("game_runs", "variation_id", "TEXT");
+db.exec(`
+  UPDATE custom_themes
+  SET user_id = profile_id
+  WHERE user_id IS NULL AND profile_id IS NOT NULL;
+`);
 
 // Run schema migrations
 const schemaSQL = readFileSync(join(__dirname, "db", "schema.sql"), "utf-8");

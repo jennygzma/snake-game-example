@@ -2,11 +2,14 @@ import type {
   GameVariation,
   GameVariationInput,
   GameVariationListResponse,
-  GameVariationResponse
+  GameVariationResponse,
+  Profile
 } from "@snake/contracts";
+import { profileSchema } from "@snake/contracts";
 import type { VariationService } from "../variationService";
 
 const STORAGE_KEY = "snake_variations";
+const PROFILES_KEY = "snake.profiles";
 
 const createId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -15,12 +18,28 @@ const createId = (): string => {
   return `variation-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const readProfiles = (): Profile[] => {
+  const raw = localStorage.getItem(PROFILES_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => profileSchema.safeParse(value))
+      .filter((result): result is { success: true; data: Profile } => result.success)
+      .map((result) => result.data);
+  } catch {
+    return [];
+  }
+};
+
 const getActiveProfileId = (): string => {
-  const stored = localStorage.getItem("activeProfileId");
-  if (!stored) {
+  const activeProfile = readProfiles().find((profile) => profile.isActive);
+  if (!activeProfile) {
     throw new Error("No active profile");
   }
-  return stored;
+  return activeProfile.id;
 };
 
 const loadVariations = (): GameVariation[] => {

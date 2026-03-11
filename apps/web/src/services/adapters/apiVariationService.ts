@@ -2,20 +2,39 @@ import {
   gameVariationInputSchema,
   gameVariationListResponseSchema,
   gameVariationResponseSchema,
+  profileSchema,
   type GameVariationInput,
   type GameVariationListResponse,
-  type GameVariationResponse
+  type GameVariationResponse,
+  type Profile
 } from "@snake/contracts";
 import type { VariationService } from "../variationService";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const PROFILES_KEY = "snake.profiles";
+
+const readProfiles = (): Profile[] => {
+  const raw = localStorage.getItem(PROFILES_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => profileSchema.safeParse(value))
+      .filter((result): result is { success: true; data: Profile } => result.success)
+      .map((result) => result.data);
+  } catch {
+    return [];
+  }
+};
 
 const getActiveProfileId = (): string => {
-  const stored = localStorage.getItem("activeProfileId");
-  if (!stored) {
+  const activeProfile = readProfiles().find((profile) => profile.isActive);
+  if (!activeProfile) {
     throw new Error("No active profile");
   }
-  return stored;
+  return activeProfile.id;
 };
 
 const request = async <T>(
