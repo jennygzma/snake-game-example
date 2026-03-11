@@ -10,6 +10,7 @@ interface ThemeGalleryProps {
   onActivate: (themeId: string) => void | Promise<void>;
   onEdit: (theme: CustomTheme) => void;
   onDelete: (themeId: string) => void | Promise<void>;
+  onShare?: (theme: CustomTheme) => void;
 }
 
 export const ThemeGallery = ({
@@ -17,7 +18,8 @@ export const ThemeGallery = ({
   activeThemeId,
   onActivate,
   onEdit,
-  onDelete
+  onDelete,
+  onShare
 }: ThemeGalleryProps) => {
   const muiTheme = useTheme();
 
@@ -152,6 +154,19 @@ export const ThemeGallery = ({
 
             <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 1 }}>
               <Box sx={{ display: "flex", gap: 1 }}>
+                {onShare && (
+                  <IconActionButton
+                    size="small"
+                    variant="outlined"
+                    tone="primary"
+                    icon={<approvedIcons.add />}
+                    iconColor={muiTheme.icons.add || muiTheme.icons.default}
+                    label={`Share ${theme.name} to Hub`}
+                    iconOnly
+                    onClick={() => onShare(theme)}
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
                 <IconActionButton
                   size="small" 
                   variant="outlined"

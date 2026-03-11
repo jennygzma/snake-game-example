@@ -5,6 +5,7 @@ import CheckRounded from "@mui/icons-material/CheckRounded";
 import CloseRounded from "@mui/icons-material/CloseRounded";
 import Delete from "@mui/icons-material/Delete";
 import EditRounded from "@mui/icons-material/EditRounded";
+import ExploreRounded from "@mui/icons-material/ExploreRounded";
 import PauseRounded from "@mui/icons-material/PauseRounded";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
@@ -23,6 +24,7 @@ export const approvedIcons = {
   close: CloseRounded,
   delete: Delete,
   edit: EditRounded,
+  explore: ExploreRounded,
   pause: PauseRounded,
   photoCamera: PhotoCamera,
   play: PlayArrowRounded,

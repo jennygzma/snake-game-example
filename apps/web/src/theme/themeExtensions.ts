@@ -33,6 +33,7 @@ declare module "@mui/material/styles" {
       close?: string;
       delete?: string;
       edit?: string;
+      explore?: string;
       play?: string;
       pause?: string;
       photoCamera?: string;
@@ -169,6 +170,7 @@ declare module "@mui/material/styles" {
       close?: string;
       delete?: string;
       edit?: string;
+      explore?: string;
       play?: string;
       pause?: string;
       photoCamera?: string;

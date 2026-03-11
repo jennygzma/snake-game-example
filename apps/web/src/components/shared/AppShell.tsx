@@ -49,6 +49,14 @@ export const AppShell = ({ children }: AppShellProps) => {
                 inactiveColor={theme.icons.barChart || theme.icons.stats || theme.icons.default}
               />
               <NavIconButton
+                label="Hub"
+                active={location.pathname === "/hub"}
+                onClick={() => navigate("/hub")}
+                icon={<approvedIcons.explore />}
+                activeColor={theme.icons.active ?? theme.ui.nav.iconActiveColor}
+                inactiveColor={theme.icons.explore || theme.icons.default}
+              />
+              <NavIconButton
                 label="Design"
                 active={location.pathname === "/design"}
                 onClick={() => navigate("/design")}
