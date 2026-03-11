@@ -8,7 +8,7 @@ import { useProfile } from "./hooks/useProfile";
 import { AppShell } from "./components/shared/AppShell";
 import { ProfilePicker } from "./components/profile/ProfilePicker";
 import { GamePage } from "./pages/GamePage";
-import { SettingsPage } from "./pages/SettingsPage";
+import { DesignPage } from "./pages/DesignPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 
@@ -69,7 +69,8 @@ const AppContent = () => {
         <AppShell>
           <Routes>
             <Route path="/" element={<GamePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/design" element={<DesignPage />} />
+        <Route path="/settings" element={<DesignPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

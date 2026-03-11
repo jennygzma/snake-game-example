@@ -16,7 +16,7 @@ const app = express();
 const port = Number(process.env.PORT ?? 4000);
 
 // Initialize persistent SQLite database
-const dataDir = join(process.cwd(), "apps", "api", "data");
+const dataDir = join(__dirname, "..", "data");
 mkdirSync(dataDir, { recursive: true });
 const db = new Database(join(dataDir, "snake.db"));
 db.pragma("journal_mode = WAL");

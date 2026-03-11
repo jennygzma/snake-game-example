@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_SETTINGS,
   type GameSettings,
+  type GameVariation,
   type LeaderboardEntry,
   type Profile
 } from "@snake/contracts";
@@ -13,6 +14,7 @@ import type { GameService } from "../services/gameService";
 type UseGameResult = {
   game: GameState;
   settings: GameSettings;
+  variation: GameVariation | null;
   player: Profile | null;
   highScore: number;
   activeLeaderboard: LeaderboardEntry[];
@@ -26,6 +28,7 @@ type UseGameResult = {
 
 export const useGame = (service: GameService, activeProfileId?: string): UseGameResult => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
+  const [variation, setVariation] = useState<GameVariation | null>(null);
   const [game, setGame] = useState<GameState>(() => createInitialState(DEFAULT_SETTINGS));
   const [player, setPlayer] = useState<Profile | null>(null);
   const [highScore, setHighScore] = useState(0);
@@ -57,7 +60,10 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
         setActiveLeaderboard(activeLeaderboardResponse.entries);
         setGlobalLeaderboard(globalLeaderboardResponse.entries);
         setSettings(loadedSettings);
-        setGame(createInitialState(loadedSettings));
+        
+        // TODO: Load active variation from service
+        // For now, use default settings
+        setGame(createInitialState(loadedSettings, undefined));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load game";
         setError(message);
@@ -77,7 +83,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
       if (current.status === "game-over") {
         runStartRef.current = Date.now();
         return {
-          ...createInitialState(settings),
+          ...createInitialState(settings, variation ?? undefined),
           status: "running"
         };
       }
@@ -96,16 +102,16 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
 
   const resetGame = useCallback(() => {
     runStartRef.current = null;
-    setGame(createInitialState(settings));
-  }, [settings]);
+    setGame(createInitialState(settings, variation ?? undefined));
+  }, [settings, variation]);
 
   const onTick = useCallback(() => {
-    setGame((current) => stepGame(current, settings));
-  }, [settings]);
+    setGame((current) => stepGame(current, settings, variation ?? undefined));
+  }, [settings, variation]);
 
   useGameLoop({
     enabled: game.status === "running",
-    ticksPerSecond: settings.speed,
+    ticksPerSecond: game.currentSpeed,
     onTick
   });
 
@@ -118,7 +124,8 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
         await service.saveRun({
           score: game.score,
           durationMs,
-          endedAt: new Date().toISOString()
+          endedAt: new Date().toISOString(),
+          variationId: variation?.id
         });
 
         setHighScore((current) => Math.max(current, game.score));
@@ -141,6 +148,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
     () => ({
       game,
       settings,
+      variation,
       player,
       highScore,
       activeLeaderboard,
@@ -162,7 +170,8 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
       settings,
       startGame,
       togglePause,
-      turn
+      turn,
+      variation
     ]
   );
 

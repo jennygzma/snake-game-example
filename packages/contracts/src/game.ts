@@ -8,12 +8,14 @@ export const gameSettingsSchema = z.object({
 export const runRecordInputSchema = z.object({
   score: z.number().int().min(0),
   durationMs: z.number().int().min(0),
-  endedAt: z.string().datetime()
+  endedAt: z.string().datetime(),
+  variationId: z.string().min(1).optional() // Optional for backward compatibility
 });
 
 export const runRecordSchema = runRecordInputSchema.extend({
   id: z.string().min(1),
-  userId: z.string().min(1)
+  userId: z.string().min(1),
+  variationId: z.string().min(1).nullable() // Nullable for legacy runs
 });
 
 export const highScoreResponseSchema = z.object({
@@ -29,7 +31,9 @@ export const leaderboardEntrySchema = z.object({
   userId: z.string().min(1),
   profileName: z.string().min(1),
   score: z.number().int().min(0),
-  endedAt: z.string().datetime()
+  endedAt: z.string().datetime(),
+  variationId: z.string().min(1).nullable(),
+  variationName: z.string().nullable().optional()
 });
 
 export const leaderboardResponseSchema = z.object({
