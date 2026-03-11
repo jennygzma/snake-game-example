@@ -6,16 +6,26 @@ type GameBoardProps = {
   snake: Cell[];
   foods: FoodItem[];
   snakeHeadImage?: string;
+  boardBackgroundColor?: string;
 };
 
 const toKey = (cell: Cell): string => `${cell.x}:${cell.y}`;
 
-export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardProps) => {
+export const GameBoard = ({ 
+  gridSize, 
+  snake, 
+  foods,
+  snakeHeadImage,
+  boardBackgroundColor 
+}: GameBoardProps) => {
   const theme = useTheme();
   const snakeSet = new Set(snake.map(toKey));
   const head = snake[0];
   const snakeHeadKey = head ? toKey(head) : "";
-  const foodMap = new Map(foods.map(f => [toKey(f.position), f]));
+  
+  // Create a map of food positions to food items
+  const foodMap = new Map(foods.map((food) => [toKey(food.position), food]));
+  
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => ({
     x: index % gridSize,
     y: Math.floor(index / gridSize)
@@ -33,7 +43,7 @@ export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardP
         borderColor: theme.ui.gameBoard.border,
         borderRadius: 1,
         overflow: "hidden",
-        backgroundColor: theme.game.boardBg
+        backgroundColor: boardBackgroundColor || theme.game.boardBg
       }}
     >
       {cells.map((cell) => {
@@ -42,33 +52,42 @@ export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardP
         const isSnake = snakeSet.has(key);
         const isHead = key === snakeHeadKey;
 
-        const backgroundStyle = isHead && snakeHeadImage
-          ? {
-              backgroundImage: `url(${snakeHeadImage})`,
+        let cellStyle: React.CSSProperties = {
+          border: `1px solid ${theme.game.boardGrid}`
+        };
+
+        if (isHead && snakeHeadImage) {
+          // Render snake head with custom image
+          cellStyle = {
+            ...cellStyle,
+            backgroundImage: `url(${snakeHeadImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+          };
+        } else if (isHead) {
+          cellStyle.backgroundColor = theme.game.snakeHead;
+        } else if (isSnake) {
+          cellStyle.backgroundColor = theme.game.snake;
+        } else if (food) {
+          // Render food with custom color and optional image
+          if (food.image) {
+            cellStyle = {
+              ...cellStyle,
+              backgroundImage: `url(${food.image})`,
               backgroundSize: "cover",
               backgroundPosition: "center"
-            }
-          : isHead
-            ? { backgroundColor: theme.game.snakeHead }
-            : isSnake
-              ? { backgroundColor: theme.game.snake }
-              : food
-                ? food.imageBase64
-                  ? {
-                      backgroundImage: `url(${food.imageBase64})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center"
-                    }
-                  : { backgroundColor: food.color }
-                : { backgroundColor: "transparent" };
+            };
+          } else {
+            cellStyle.backgroundColor = food.color;
+          }
+        } else {
+          cellStyle.backgroundColor = "transparent";
+        }
 
         return (
           <Box
             key={key}
-            sx={{
-              border: `1px solid ${theme.game.boardGrid}`,
-              ...backgroundStyle
-            }}
+            sx={cellStyle}
           />
         );
       })}

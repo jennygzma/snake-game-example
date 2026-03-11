@@ -1,5 +1,5 @@
-import type { GameSettings, GameVariation, PowerupType } from "@snake/contracts";
-import type { Cell, Direction, GameState, FoodItem, ActiveEffect } from "../types/game";
+import type { GameSettings, PowerupType } from "@snake/contracts";
+import type { Cell, Direction, GameState, FoodItem, ActiveEffect, PowerupEffect } from "../types/game";
 import { collidesWithSnake } from "./collision";
 import { isInBounds, isSameCell, randomCell } from "./grid";
 
@@ -19,67 +19,50 @@ const oppositeDirection: Record<Direction, Direction> = {
   right: "left"
 };
 
-const placeFood = (snake: Cell[], existingFoods: FoodItem[], gridSize: number): Cell => {
-  let next = randomCell(gridSize);
-  const allPositions = [...existingFoods.map(f => f.position)];
-  while (collidesWithSnake(next, snake) || allPositions.some(p => isSameCell(p, next))) {
-    next = randomCell(gridSize);
-  }
-  return next;
-};
-
-const selectRandomPowerup = (powerups: PowerupType[]): PowerupType | null => {
-  if (powerups.length === 0) return null;
-  
-  // Weight-based selection
-  const totalWeight = powerups.reduce((sum, p) => sum + p.spawnWeight, 0);
-  if (totalWeight === 0) return powerups[0];
-  
-  let random = Math.random() * totalWeight;
-  for (const powerup of powerups) {
-    random -= powerup.spawnWeight;
-    if (random <= 0) return powerup;
-  }
-  
-  return powerups[0];
-};
-
-const spawnFoodItem = (
+const placeFood = (
   snake: Cell[],
   existingFoods: FoodItem[],
   gridSize: number,
-  powerups: PowerupType[]
-): FoodItem | null => {
-  const powerup = selectRandomPowerup(powerups);
-  if (!powerup) return null;
-
-  const position = placeFood(snake, existingFoods, gridSize);
+  powerup: PowerupType
+): FoodItem => {
+  let position = randomCell(gridSize);
+  const occupiedCells = [
+    ...snake,
+    ...existingFoods.map((f) => f.position)
+  ];
+  
+  while (occupiedCells.some((cell) => isSameCell(cell, position))) {
+    position = randomCell(gridSize);
+  }
   
   return {
     position,
     powerupId: powerup.id,
+    effect: powerup.effect as PowerupEffect,
+    value: powerup.value,
     color: powerup.color,
-    imageBase64: powerup.imageBase64
+    image: powerup.image
   };
 };
 
-const calculateCurrentSpeed = (baseSpeed: number, effects: ActiveEffect[]): number => {
+const calculateSpeed = (baseSpeed: number, effects: ActiveEffect[]): number => {
   let speed = baseSpeed;
   
   for (const effect of effects) {
-    if (effect.effect === "speed_boost") {
+    if (effect.effect === "speed_increase") {
       speed *= effect.value;
-    } else if (effect.effect === "speed_reduction") {
-      speed /= effect.value;
+    } else if (effect.effect === "speed_decrease") {
+      speed *= effect.value;
     }
   }
   
-  return Math.max(1, Math.min(30, speed));
+  return Math.max(1, Math.min(30, Math.round(speed)));
 };
 
 export const createInitialState = (
   settings: GameSettings,
-  variation?: GameVariation
+  powerups: PowerupType[] = [],
+  maxConcurrentFoods: number = 1
 ): GameState => {
   const mid = Math.floor(settings.gridSize / 2);
   const snake: Cell[] = Array.from({ length: START_LENGTH }, (_, index) => ({
@@ -87,16 +70,26 @@ export const createInitialState = (
     y: mid
   }));
 
-  const baseSpeed = variation?.baseSpeed ?? settings.speed;
-  const maxFoods = variation?.maxConcurrentFoods ?? 1;
-  const powerups = variation?.powerups ?? [];
+  // Default powerup if none provided
+  const defaultPowerup: PowerupType = {
+    id: "default",
+    effect: "points_multiplier",
+    value: 1,
+    color: "#87ae73"
+  };
 
+  const powerupList = powerups.length > 0 ? powerups : [defaultPowerup];
+  
   // Spawn initial foods
   const foods: FoodItem[] = [];
-  for (let i = 0; i < maxFoods; i++) {
-    const foodItem = spawnFoodItem(snake, foods, settings.gridSize, powerups);
-    if (foodItem) foods.push(foodItem);
+  for (let i = 0; i < maxConcurrentFoods; i++) {
+    const randomPowerup = powerupList[Math.floor(Math.random() * powerupList.length)];
+    if (randomPowerup) {
+      foods.push(placeFood(snake, foods, settings.gridSize, randomPowerup));
+    }
   }
+
+  const baseSpeed = settings.speed;
 
   return {
     snake,
@@ -107,6 +100,7 @@ export const createInitialState = (
     status: "idle",
     tickCount: 0,
     activeEffects: [],
+    baseSpeed,
     currentSpeed: baseSpeed
   };
 };
@@ -125,7 +119,8 @@ export const setDirection = (state: GameState, direction: Direction): GameState 
 export const stepGame = (
   state: GameState,
   settings: GameSettings,
-  variation?: GameVariation
+  powerups: PowerupType[] = [],
+  maxConcurrentFoods: number = 1
 ): GameState => {
   if (state.status !== "running") return state;
 
@@ -154,92 +149,68 @@ export const stepGame = (
     };
   }
 
-  // Check if head collides with any food
-  const eatenFoodIndex = state.foods.findIndex(f => isSameCell(nextHead, f.position));
-  const ateFood = eatenFoodIndex >= 0;
+  // Check if any food was eaten
+  const eatenFood = state.foods.find((food) => isSameCell(nextHead, food.position));
   
   let newSnake = state.snake;
   let newScore = state.score;
-  let newFoods = [...state.foods];
-  let newEffects = [...state.activeEffects];
-  
-  if (ateFood) {
-    const eatenFood = state.foods[eatenFoodIndex];
-    const powerups = variation?.powerups ?? [];
-    const powerup = powerups.find(p => p.id === eatenFood.powerupId);
-    
-    if (powerup) {
-      // Apply powerup effect
-      switch (powerup.effect) {
-        case "speed_boost":
-        case "speed_reduction":
-          if (powerup.isPermanent) {
-            newEffects.push({
-              powerupId: powerup.id,
-              effect: powerup.effect,
-              value: powerup.value,
-              appliedAt: Date.now()
-            });
-          }
-          newSnake = [nextHead, ...state.snake];
-          newScore += 1;
-          break;
-          
-        case "point_multiplier":
-          newSnake = [nextHead, ...state.snake];
-          newScore += Math.floor(powerup.value);
-          break;
-          
-        case "length_add":
-          // Add blocks immediately
-          const blocksToAdd = Math.floor(powerup.value);
-          newSnake = [nextHead, ...state.snake];
-          for (let i = 0; i < blocksToAdd - 1; i++) {
-            const tail = newSnake[newSnake.length - 1];
-            if (tail) newSnake.push({ ...tail });
-          }
-          newScore += 1;
-          break;
-          
-        case "length_subtract":
-          // Remove blocks immediately
-          const blocksToRemove = Math.floor(powerup.value);
-          const minLength = 1;
-          const newLength = Math.max(minLength, state.snake.length - blocksToRemove);
-          newSnake = [nextHead, ...state.snake.slice(0, newLength - 1)];
-          newScore += 1;
-          break;
-          
-        default:
-          newSnake = [nextHead, ...state.snake];
-          newScore += 1;
+  let newFoods = state.foods;
+  let newActiveEffects = [...state.activeEffects];
+
+  if (eatenFood) {
+    // Apply powerup effect
+    const effect = eatenFood.effect;
+    const value = eatenFood.value;
+
+    if (effect === "points_multiplier") {
+      newScore += Math.round(value);
+    } else if (effect === "length_increase") {
+      // Add extra segments
+      const tail = state.snake[state.snake.length - 1];
+      if (tail) {
+        for (let i = 0; i < value; i++) {
+          newSnake = [...newSnake, tail];
+        }
       }
+      newSnake = [nextHead, ...newSnake];
+    } else if (effect === "length_decrease") {
+      // Remove segments (but keep at least 1)
+      const removeCount = Math.min(value, state.snake.length - 1);
+      newSnake = [nextHead, ...state.snake.slice(0, Math.max(1, state.snake.length - removeCount))];
+    } else if (effect === "speed_increase" || effect === "speed_decrease") {
+      // Add permanent speed effect
+      newActiveEffects.push({
+        powerupId: eatenFood.powerupId,
+        effect,
+        value
+      });
+      newSnake = [nextHead, ...newSnake];
     } else {
-      // Default behavior if powerup not found
-      newSnake = [nextHead, ...state.snake];
-      newScore += 1;
+      // Default: grow snake by 1
+      newSnake = [nextHead, ...newSnake];
     }
+
+    // Remove eaten food and spawn new one
+    newFoods = state.foods.filter((f) => f !== eatenFood);
     
-    // Remove eaten food and spawn a new one
-    newFoods.splice(eatenFoodIndex, 1);
-    const maxFoods = variation?.maxConcurrentFoods ?? 1;
-    if (newFoods.length < maxFoods) {
-      const newFoodItem = spawnFoodItem(
-        newSnake,
-        newFoods,
-        settings.gridSize,
-        powerups
-      );
-      if (newFoodItem) newFoods.push(newFoodItem);
+    const powerupList = powerups.length > 0 ? powerups : [{
+      id: "default",
+      effect: "points_multiplier",
+      value: 1,
+      color: "#87ae73"
+    }] as PowerupType[];
+    
+    const randomPowerup = powerupList[Math.floor(Math.random() * powerupList.length)];
+    if (randomPowerup && newFoods.length < maxConcurrentFoods) {
+      newFoods.push(placeFood(newSnake, newFoods, settings.gridSize, randomPowerup));
     }
   } else {
     // No food eaten, move snake normally
     newSnake = [nextHead, ...state.snake.slice(0, state.snake.length - 1)];
   }
-  
-  // Calculate new speed based on active effects
-  const baseSpeed = variation?.baseSpeed ?? settings.speed;
-  const newSpeed = calculateCurrentSpeed(baseSpeed, newEffects);
+
+  // Calculate current speed based on active effects
+  const currentSpeed = calculateSpeed(state.baseSpeed, newActiveEffects);
 
   return {
     ...state,
@@ -249,7 +220,7 @@ export const stepGame = (
     pendingDirection: direction,
     score: newScore,
     tickCount: state.tickCount + 1,
-    activeEffects: newEffects,
-    currentSpeed: newSpeed
+    activeEffects: newActiveEffects,
+    currentSpeed
   };
 };

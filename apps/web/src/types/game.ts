@@ -7,18 +7,26 @@ export type Cell = {
   y: number;
 };
 
+export type PowerupEffect = 
+  | "speed_increase"
+  | "speed_decrease" 
+  | "points_multiplier"
+  | "length_increase"
+  | "length_decrease";
+
 export type FoodItem = {
   position: Cell;
   powerupId: string;
+  effect: PowerupEffect;
+  value: number;
   color: string;
-  imageBase64?: string;
+  image?: string;
 };
 
 export type ActiveEffect = {
   powerupId: string;
-  effect: "speed_boost" | "speed_reduction" | "point_multiplier" | "length_add" | "length_subtract";
+  effect: PowerupEffect;
   value: number;
-  appliedAt: number; // timestamp
 };
 
 export type GameState = {
@@ -30,5 +38,6 @@ export type GameState = {
   status: GameStatus;
   tickCount: number;
   activeEffects: ActiveEffect[];
-  currentSpeed: number; // Calculated from base + effects
+  baseSpeed: number;
+  currentSpeed: number;
 };

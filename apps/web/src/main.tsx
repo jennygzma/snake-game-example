@@ -70,7 +70,6 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<GamePage />} />
             <Route path="/design" element={<DesignPage />} />
-        <Route path="/settings" element={<DesignPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

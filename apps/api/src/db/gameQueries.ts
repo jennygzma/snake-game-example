@@ -22,52 +22,76 @@ export const gameQueries = (db: Database) => ({
     return row?.high_score ?? 0;
   },
 
-  listLeaderboard(limit: number, scope: "active" | "global", profileId: string): Array<{
+  listLeaderboard(
+    limit: number, 
+    scope: "active" | "global", 
+    profileId: string,
+    variationId?: string
+  ): Array<{
     rank: number;
     userId: string;
     profileName: string;
     score: number;
     endedAt: string;
+    variationId?: string;
   }> {
     const safeLimit = Math.max(1, limit);
-    const rows =
-      scope === "global"
-        ? (db
-            .prepare(
-              `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at
-               FROM game_runs r
-               JOIN profiles p ON p.id = r.profile_id
-               ORDER BY r.score DESC, datetime(r.ended_at) DESC
-               LIMIT ?`
-            )
-            .all(safeLimit) as Array<{
-            profile_id: string;
-            profile_name: string;
-            score: number;
-            ended_at: string;
-          }>)
-        : (db
-            .prepare(
-              `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at
-               FROM game_runs r
-               JOIN profiles p ON p.id = r.profile_id
-               WHERE r.profile_id = ?
-               ORDER BY r.score DESC, datetime(r.ended_at) DESC
-               LIMIT ?`
-            )
-            .all(profileId, safeLimit) as Array<{
-            profile_id: string;
-            profile_name: string;
-            score: number;
-            ended_at: string;
-          }>);
+    
+    let query: string;
+    let params: (string | number)[];
+    
+    if (scope === "global") {
+      if (variationId) {
+        query = `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at, r.variation_id
+                 FROM game_runs r
+                 JOIN profiles p ON p.id = r.profile_id
+                 WHERE r.variation_id = ?
+                 ORDER BY r.score DESC, datetime(r.ended_at) DESC
+                 LIMIT ?`;
+        params = [variationId, safeLimit];
+      } else {
+        query = `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at, r.variation_id
+                 FROM game_runs r
+                 JOIN profiles p ON p.id = r.profile_id
+                 ORDER BY r.score DESC, datetime(r.ended_at) DESC
+                 LIMIT ?`;
+        params = [safeLimit];
+      }
+    } else {
+      if (variationId) {
+        query = `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at, r.variation_id
+                 FROM game_runs r
+                 JOIN profiles p ON p.id = r.profile_id
+                 WHERE r.profile_id = ? AND r.variation_id = ?
+                 ORDER BY r.score DESC, datetime(r.ended_at) DESC
+                 LIMIT ?`;
+        params = [profileId, variationId, safeLimit];
+      } else {
+        query = `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at, r.variation_id
+                 FROM game_runs r
+                 JOIN profiles p ON p.id = r.profile_id
+                 WHERE r.profile_id = ?
+                 ORDER BY r.score DESC, datetime(r.ended_at) DESC
+                 LIMIT ?`;
+        params = [profileId, safeLimit];
+      }
+    }
+    
+    const rows = db.prepare(query).all(...params) as Array<{
+      profile_id: string;
+      profile_name: string;
+      score: number;
+      ended_at: string;
+      variation_id: string | null;
+    }>;
 
     return rows.map((row, index) => ({
       rank: index + 1,
       userId: row.profile_id,
       profileName: row.profile_name,
       score: row.score,
-      endedAt: row.ended_at
+      endedAt: row.ended_at,
+      variationId: row.variation_id || undefined
     }));
   },
 
@@ -76,16 +100,17 @@ export const gameQueries = (db: Database) => ({
     const createdAt = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO game_runs (id, profile_id, score, duration_ms, ended_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(id, profileId, input.score, input.durationMs, input.endedAt, createdAt);
+      `INSERT INTO game_runs (id, profile_id, variation_id, score, duration_ms, ended_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, profileId, input.variationId || null, input.score, input.durationMs, input.endedAt, createdAt);
 
     return {
       id,
       userId: profileId,
       score: input.score,
       durationMs: input.durationMs,
-      endedAt: input.endedAt
+      endedAt: input.endedAt,
+      variationId: input.variationId
     };
   },
 

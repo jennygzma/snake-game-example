@@ -53,7 +53,8 @@ export const createGameRouter = (db: Database) => {
     try {
       const limit = asNumber(req.query.limit, 10);
       const scope = req.query.scope === "global" ? "global" : "active";
-      const payload = leaderboardResponseSchema.parse(gameDataService.getLeaderboard(limit, scope));
+      const variationId = typeof req.query.variationId === "string" ? req.query.variationId : undefined;
+      const payload = leaderboardResponseSchema.parse(gameDataService.getLeaderboard(limit, scope, variationId));
       res.json(payload);
     } catch (error) {
       if (error instanceof Error && error.message === "NO_ACTIVE_PROFILE") {

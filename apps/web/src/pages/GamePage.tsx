@@ -21,7 +21,7 @@ const resolveService = (): GameService => {
 export const GamePage = () => {
   const service = useMemo(resolveService, []);
   const { activeProfile } = useProfile();
-  const { game, settings, variation, player, highScore, error, startGame, resetGame, togglePause, turn } = useGame(
+  const { game, settings, player, highScore, error, startGame, resetGame, togglePause, turn } = useGame(
     service,
     activeProfile?.id
   );
@@ -130,11 +130,12 @@ export const GamePage = () => {
           <Box>
             <Panel sx={{ height: "100%" }}>
               <GameBoard 
-          gridSize={settings.gridSize} 
-          snake={game.snake} 
-          foods={game.foods}
-          snakeHeadImage={variation?.snakeHeadImageBase64}
-        />
+                gridSize={settings.gridSize} 
+                snake={game.snake} 
+                foods={game.foods}
+                snakeHeadImage={undefined}
+                boardBackgroundColor={undefined}
+              />
             </Panel>
           </Box>
           <Box>
