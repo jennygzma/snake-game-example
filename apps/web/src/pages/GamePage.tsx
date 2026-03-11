@@ -129,7 +129,7 @@ export const GamePage = () => {
         >
           <Box>
             <Panel sx={{ height: "100%" }}>
-              <GameBoard gridSize={settings.gridSize} snake={game.snake} food={game.food} />
+              <GameBoard gridSize={settings.gridSize} snake={game.snake} food={game.foods[0]?.position || { x: 0, y: 0 }} />
             </Panel>
           </Box>
           <Box>
