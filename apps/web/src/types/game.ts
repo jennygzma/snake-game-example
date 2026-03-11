@@ -7,12 +7,29 @@ export type Cell = {
   y: number;
 };
 
+export type PowerupEffect = "speed_increase" | "speed_decrease" | "add_blocks" | "subtract_blocks" | "double_points";
+
+export type FoodItem = {
+  position: Cell;
+  effect: PowerupEffect;
+  value: number;
+  color: string;
+};
+
+export type ActiveEffect = {
+  effect: PowerupEffect;
+  value: number;
+};
+
 export type GameState = {
   snake: Cell[];
-  food: Cell;
+  foods: FoodItem[];
   direction: Direction;
   pendingDirection: Direction;
   score: number;
   status: GameStatus;
   tickCount: number;
+  activeEffects: ActiveEffect[];
+  currentSpeed: number;
+  baseSpeed: number;
 };
