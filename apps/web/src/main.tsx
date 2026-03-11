@@ -69,7 +69,8 @@ const AppContent = () => {
         <AppShell>
           <Routes>
             <Route path="/" element={<GamePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/design" element={<SettingsPage />} />
+            <Route path="/settings" element={<Navigate to="/design" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

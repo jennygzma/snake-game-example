@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
 import { ActionButton } from "../components/shared/ActionButton";
@@ -8,6 +8,7 @@ import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { useKeyboard } from "../hooks/useKeyboard";
 import { useProfile } from "../hooks/useProfile";
+import { useVariations } from "../hooks/useVariations";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
@@ -21,6 +22,14 @@ const resolveService = (): GameService => {
 export const GamePage = () => {
   const service = useMemo(resolveService, []);
   const { activeProfile } = useProfile();
+  const { variations, loading: variationsLoading } = useVariations(activeProfile?.id);
+  const [selectedVariationId, setSelectedVariationId] = useState<string | null>(null);
+  
+  const selectedVariation = useMemo(
+    () => variations.find((v) => v.id === selectedVariationId) || variations[0],
+    [variations, selectedVariationId]
+  );
+
   const { game, settings, player, highScore, error, startGame, resetGame, togglePause, turn } = useGame(
     service,
     activeProfile?.id
@@ -129,12 +138,31 @@ export const GamePage = () => {
         >
           <Box>
             <Panel sx={{ height: "100%" }}>
-              <GameBoard gridSize={settings.gridSize} snake={game.snake} food={game.food} />
+              <GameBoard gridSize={settings.gridSize} snake={game.snake} foods={game.foods} />
             </Panel>
           </Box>
           <Box>
             <Panel sx={{ height: "100%" }}>
               <Stack spacing={2}>
+                {!variationsLoading && variations.length > 0 && (
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="variation-selector">Game Variation</InputLabel>
+                    <Select
+                      labelId="variation-selector"
+                      value={selectedVariationId || variations[0]?.id || ""}
+                      label="Game Variation"
+                      onChange={(e) => setSelectedVariationId(e.target.value)}
+                      inputProps={{ "aria-label": "Select game variation" }}
+                    >
+                      {variations.map((variation) => (
+                        <MenuItem key={variation.id} value={variation.id}>
+                          {variation.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+                
                 <Typography variant="h6" gutterBottom>
                   Score: {game.score}
                 </Typography>

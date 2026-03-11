@@ -46,7 +46,9 @@ describe("Game components accessibility", () => {
             { x: 1, y: 5 },
             { x: 0, y: 5 }
           ]}
-          food={{ x: 7, y: 3 }}
+          foods={[
+            { position: { x: 7, y: 3 }, effect: "double_points", value: 1, color: "#87ae73" }
+          ]}
         />
       </ThemeProvider>
     );

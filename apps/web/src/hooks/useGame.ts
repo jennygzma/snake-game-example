@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_CLASSIC_VARIATION,
   type GameSettings,
   type LeaderboardEntry,
   type Profile
@@ -26,7 +27,9 @@ type UseGameResult = {
 
 export const useGame = (service: GameService, activeProfileId?: string): UseGameResult => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  const [game, setGame] = useState<GameState>(() => createInitialState(DEFAULT_SETTINGS));
+  const [game, setGame] = useState<GameState>(() => 
+    createInitialState(DEFAULT_SETTINGS, DEFAULT_CLASSIC_VARIATION.powerupTypes, 1)
+  );
   const [player, setPlayer] = useState<Profile | null>(null);
   const [highScore, setHighScore] = useState(0);
   const [activeLeaderboard, setActiveLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -57,7 +60,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
         setActiveLeaderboard(activeLeaderboardResponse.entries);
         setGlobalLeaderboard(globalLeaderboardResponse.entries);
         setSettings(loadedSettings);
-        setGame(createInitialState(loadedSettings));
+        setGame(createInitialState(loadedSettings, DEFAULT_CLASSIC_VARIATION.powerupTypes, 1));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load game";
         setError(message);
@@ -77,7 +80,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
       if (current.status === "game-over") {
         runStartRef.current = Date.now();
         return {
-          ...createInitialState(settings),
+          ...createInitialState(settings, DEFAULT_CLASSIC_VARIATION.powerupTypes, 1),
           status: "running"
         };
       }
@@ -96,11 +99,11 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
 
   const resetGame = useCallback(() => {
     runStartRef.current = null;
-    setGame(createInitialState(settings));
+    setGame(createInitialState(settings, DEFAULT_CLASSIC_VARIATION.powerupTypes, 1));
   }, [settings]);
 
   const onTick = useCallback(() => {
-    setGame((current) => stepGame(current, settings));
+    setGame((current) => stepGame(current, settings, DEFAULT_CLASSIC_VARIATION.powerupTypes, 1));
   }, [settings]);
 
   useGameLoop({
