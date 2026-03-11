@@ -4,6 +4,7 @@ import type { CustomTheme, GameVariation, SaveThemeInput } from "@snake/contract
 import { PageLayout } from "../components/shared/PageLayout";
 import { IconActionButton } from "../components/shared/IconActionButton";
 import { SaveThemeDialog } from "../components/settings/SaveThemeDialog";
+import { ShareDialog } from "../components/settings/ShareDialog";
 import { ThemeEditor } from "../components/settings/ThemeEditor";
 import { ThemeGallery } from "../components/settings/ThemeGallery";
 import { VariationEditor } from "../components/settings/VariationEditor";
@@ -14,14 +15,23 @@ import { approvedIcons } from "../theme/approvedIcons";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
+import { apiHubService } from "../services/adapters/apiHubService";
+import { localHubService } from "../services/storage/localHubService";
+import type { HubService } from "../services/hubService";
 
 const resolveGameService = (): GameService => {
   const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
   return mode === "local" ? localGameService : apiGameService;
 };
 
+const resolveHubService = (): HubService => {
+  const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
+  return mode === "local" ? localHubService : apiHubService;
+};
+
 export const SettingsPage = () => {
   const gameService = useMemo(resolveGameService, []);
+  const hubService = useMemo(resolveHubService, []);
   const { activeProfile } = useProfile();
   const { themes, activeTheme, loading, error, createTheme, updateTheme, deleteTheme, activateTheme } = useTheme();
   const {
@@ -39,6 +49,8 @@ export const SettingsPage = () => {
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sharingItem, setSharingItem] = useState<{ id: string; name: string; type: "theme" | "variation" } | null>(null);
 
   const editingVariation: GameVariation | undefined =
     editingVariationId ? variations.find((variation) => variation.id === editingVariationId) : undefined;
@@ -88,6 +100,22 @@ export const SettingsPage = () => {
     await deleteVariation(variationId);
     if (activeVariationId === variationId) {
       await handleActivateVariation(null);
+    }
+  };
+
+  const handleShareItem = async (description?: string) => {
+    if (!sharingItem) return;
+
+    try {
+      if (sharingItem.type === "theme") {
+        await hubService.shareTheme({ themeId: sharingItem.id, description });
+      } else {
+        await hubService.shareVariation({ variationId: sharingItem.id, description });
+      }
+      setShareDialogOpen(false);
+      setSharingItem(null);
+    } catch (error) {
+      console.error("Failed to share:", error);
     }
   };
 
@@ -217,6 +245,18 @@ export const SettingsPage = () => {
                           size="small"
                           variant="outlined"
                           tone="neutral"
+                          icon={<approvedIcons.share />}
+                          label={`Share ${variation.name} to Hub`}
+                          iconOnly
+                          onClick={() => {
+                            setSharingItem({ id: variation.id, name: variation.name, type: "variation" });
+                            setShareDialogOpen(true);
+                          }}
+                        />
+                        <IconActionButton
+                          size="small"
+                          variant="outlined"
+                          tone="neutral"
                           icon={<approvedIcons.edit />}
                           label={`Edit ${variation.name}`}
                           iconOnly
@@ -279,6 +319,10 @@ export const SettingsPage = () => {
               onDelete={async (id) => {
                 await deleteTheme(id);
               }}
+              onShare={(themeId, themeName) => {
+                setSharingItem({ id: themeId, name: themeName, type: "theme" });
+                setShareDialogOpen(true);
+              }}
             />
           </Box>
         </>
@@ -292,6 +336,17 @@ export const SettingsPage = () => {
           setPendingThemeData(null);
         }}
         onSave={handleSaveTheme}
+      />
+
+      <ShareDialog
+        open={shareDialogOpen}
+        itemName={sharingItem?.name || ""}
+        itemType={sharingItem?.type || "theme"}
+        onClose={() => {
+          setShareDialogOpen(false);
+          setSharingItem(null);
+        }}
+        onShare={handleShareItem}
       />
     </PageLayout>
   );
