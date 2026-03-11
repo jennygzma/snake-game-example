@@ -22,52 +22,58 @@ export const gameQueries = (db: Database) => ({
     return row?.high_score ?? 0;
   },
 
-  listLeaderboard(limit: number, scope: "active" | "global", profileId: string): Array<{
+  listLeaderboard(limit: number, scope: "active" | "global", profileId: string, variationId?: string): Array<{
     rank: number;
     userId: string;
     profileName: string;
     score: number;
     endedAt: string;
+    variationName?: string;
   }> {
     const safeLimit = Math.max(1, limit);
-    const rows =
-      scope === "global"
-        ? (db
-            .prepare(
-              `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at
-               FROM game_runs r
-               JOIN profiles p ON p.id = r.profile_id
-               ORDER BY r.score DESC, datetime(r.ended_at) DESC
-               LIMIT ?`
-            )
-            .all(safeLimit) as Array<{
-            profile_id: string;
-            profile_name: string;
-            score: number;
-            ended_at: string;
-          }>)
-        : (db
-            .prepare(
-              `SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at
-               FROM game_runs r
-               JOIN profiles p ON p.id = r.profile_id
-               WHERE r.profile_id = ?
-               ORDER BY r.score DESC, datetime(r.ended_at) DESC
-               LIMIT ?`
-            )
-            .all(profileId, safeLimit) as Array<{
-            profile_id: string;
-            profile_name: string;
-            score: number;
-            ended_at: string;
-          }>);
+    
+    let query = `
+      SELECT r.profile_id, p.name AS profile_name, r.score, r.ended_at, v.name AS variation_name
+      FROM game_runs r
+      JOIN profiles p ON p.id = r.profile_id
+      LEFT JOIN game_variations v ON v.id = r.variation_id
+    `;
+    
+    const conditions: string[] = [];
+    const params: any[] = [];
+    
+    if (scope === "active") {
+      conditions.push("r.profile_id = ?");
+      params.push(profileId);
+    }
+    
+    if (variationId) {
+      conditions.push("r.variation_id = ?");
+      params.push(variationId);
+    }
+    
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
+    
+    query += " ORDER BY r.score DESC, datetime(r.ended_at) DESC LIMIT ?";
+    params.push(safeLimit);
+    
+    const rows = db.prepare(query).all(...params) as Array<{
+      profile_id: string;
+      profile_name: string;
+      score: number;
+      ended_at: string;
+      variation_name: string | null;
+    }>;
 
     return rows.map((row, index) => ({
       rank: index + 1,
       userId: row.profile_id,
       profileName: row.profile_name,
       score: row.score,
-      endedAt: row.ended_at
+      endedAt: row.ended_at,
+      variationName: row.variation_name || undefined
     }));
   },
 
@@ -76,16 +82,17 @@ export const gameQueries = (db: Database) => ({
     const createdAt = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO game_runs (id, profile_id, score, duration_ms, ended_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(id, profileId, input.score, input.durationMs, input.endedAt, createdAt);
+      `INSERT INTO game_runs (id, profile_id, variation_id, score, duration_ms, ended_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, profileId, input.variationId || null, input.score, input.durationMs, input.endedAt, createdAt);
 
     return {
       id,
       userId: profileId,
       score: input.score,
       durationMs: input.durationMs,
-      endedAt: input.endedAt
+      endedAt: input.endedAt,
+      variationId: input.variationId
     };
   },
 

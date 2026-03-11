@@ -1,6 +1,7 @@
 import type {
   GameSettings,
   HighScoreResponse,
+  LeaderboardQuery,
   LeaderboardResponse,
   Profile,
   RecentRunsResponse,
@@ -33,9 +34,9 @@ export const createGameDataService = (db: Database) => {
       return { highScore: games.getHighScoreByProfileId(profile.id) };
     },
 
-    getLeaderboard(limit: number, scope: "active" | "global"): LeaderboardResponse {
+    getLeaderboard(limit: number, scope: "active" | "global", query?: LeaderboardQuery): LeaderboardResponse {
       const profile = getActiveProfile();
-      return { entries: games.listLeaderboard(limit, scope, profile.id) };
+      return { entries: games.listLeaderboard(limit, scope, profile.id, query?.variationId) };
     },
 
     saveRun(input: RunRecordInput): RunRecord {

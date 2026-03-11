@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, Select, MenuItem, FormControl, InputLabel, ToggleButtonGroup, ToggleButton } from "@mui/material";
 import { GameBoard } from "../components/game/GameBoard";
 import { GameOverScreen } from "../components/game/GameOverScreen";
+import { LeaderboardPanel } from "../components/game/LeaderboardPanel";
 import { ActionButton } from "../components/shared/ActionButton";
 import { PageLayout } from "../components/shared/PageLayout";
 import { Panel } from "../components/shared/Panel";
 import { useGame } from "../hooks/useGame";
 import { useKeyboard } from "../hooks/useKeyboard";
 import { useProfile } from "../hooks/useProfile";
+import { useVariations } from "../hooks/useVariations";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
 import { approvedIcons } from "../theme/approvedIcons";
+import type { LeaderboardEntry } from "@snake/contracts";
 
 const resolveService = (): GameService => {
   const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
@@ -21,6 +24,11 @@ const resolveService = (): GameService => {
 export const GamePage = () => {
   const service = useMemo(resolveService, []);
   const { activeProfile } = useProfile();
+  const { variations } = useVariations(activeProfile?.id);
+  const [selectedVariationId, setSelectedVariationId] = useState<string | null>(null);
+  const [leaderboardFilter, setLeaderboardFilter] = useState<"all" | "current">("all");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  
   const { game, settings, player, highScore, error, startGame, resetGame, togglePause, turn } = useGame(
     service,
     activeProfile?.id
@@ -32,6 +40,11 @@ export const GamePage = () => {
   const previousStatusRef = useRef(game.status);
   const previousScoreRef = useRef(game.score);
   const previousHighScoreRef = useRef(highScore);
+  const previousVariationIdRef = useRef(selectedVariationId);
+  
+  const selectedVariation = selectedVariationId 
+    ? variations.find(v => v.id === selectedVariationId)
+    : null;
 
   useKeyboard({
     onDirection: turn,
@@ -44,6 +57,13 @@ export const GamePage = () => {
     const previousStatus = previousStatusRef.current;
     const previousScore = previousScoreRef.current;
     const previousHighScore = previousHighScoreRef.current;
+    const previousVariationId = previousVariationIdRef.current;
+
+    if (selectedVariationId !== previousVariationId) {
+      const variationName = selectedVariation?.name || "Classic";
+      setAnnouncement(`Switched to ${variationName} variation.`);
+      previousVariationIdRef.current = selectedVariationId;
+    }
 
     if (game.status !== previousStatus) {
       if (game.status === "running" && (previousStatus === "idle" || previousStatus === "game-over")) {
@@ -69,7 +89,25 @@ export const GamePage = () => {
     previousStatusRef.current = game.status;
     previousScoreRef.current = game.score;
     previousHighScoreRef.current = highScore;
-  }, [game.score, game.status, highScore]);
+  }, [game.score, game.status, highScore, selectedVariationId, selectedVariation]);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      if (!activeProfile?.id) return;
+      
+      const response = await service.getLeaderboard(10, "active");
+      const entries = response.entries || [];
+      
+      // Filter by variation if "current" filter is selected
+      const filteredEntries = leaderboardFilter === "current" && selectedVariationId
+        ? entries.filter(entry => entry.variationName === selectedVariation?.name)
+        : entries;
+      
+      setLeaderboard(filteredEntries);
+    };
+    
+    fetchLeaderboard();
+  }, [activeProfile?.id, leaderboardFilter, selectedVariationId, selectedVariation, service]);
 
   if (isGameOverView) {
     return <GameOverScreen score={game.score} onRestart={startGame} />;
@@ -77,12 +115,36 @@ export const GamePage = () => {
 
   return (
     <PageLayout maxWidth="lg" spacing={2}>
-        <Typography variant="caption" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
-          Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
-        </Typography>
-        <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
-          Data source: {serviceMode} service
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+              Controls: Arrow Keys/WASD move, Space/P pause, Enter start, R reset
+            </Typography>
+            <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+              Data source: {serviceMode} service
+            </Typography>
+          </Box>
+          
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="variation-select-label">Game Variation</InputLabel>
+            <Select
+              labelId="variation-select-label"
+              value={selectedVariationId || ""}
+              onChange={(e) => setSelectedVariationId(e.target.value || null)}
+              label="Game Variation"
+              aria-label="Select game variation"
+            >
+              <MenuItem value="">
+                <em>Classic (Default)</em>
+              </MenuItem>
+              {variations.map((variation) => (
+                <MenuItem key={variation.id} value={variation.id}>
+                  {variation.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <Box
           role="status"
           aria-live="polite"
@@ -129,12 +191,17 @@ export const GamePage = () => {
         >
           <Box>
             <Panel sx={{ height: "100%" }}>
-              <GameBoard gridSize={settings.gridSize} snake={game.snake} food={game.food} />
+              <GameBoard gridSize={settings.gridSize} snake={game.snake} foods={game.foods} />
             </Panel>
           </Box>
           <Box>
             <Panel sx={{ height: "100%" }}>
               <Stack spacing={2}>
+                {selectedVariation && (
+                  <Typography variant="subtitle2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
+                    Playing: {selectedVariation.name}
+                  </Typography>
+                )}
                 <Typography variant="h6" gutterBottom>
                   Score: {game.score}
                 </Typography>
@@ -167,6 +234,29 @@ export const GamePage = () => {
                     Reset
                   </ActionButton>
                 </Stack>
+                
+                <Box sx={{ mt: 3 }}>
+                  <Stack spacing={2}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Typography variant="h6">Leaderboard</Typography>
+                      <ToggleButtonGroup
+                        value={leaderboardFilter}
+                        exclusive
+                        onChange={(_, value) => value && setLeaderboardFilter(value)}
+                        size="small"
+                        aria-label="Leaderboard filter"
+                      >
+                        <ToggleButton value="all" aria-label="All games">
+                          All
+                        </ToggleButton>
+                        <ToggleButton value="current" aria-label="Current variation only">
+                          Current
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    </Box>
+                    <LeaderboardPanel entries={leaderboard} />
+                  </Stack>
+                </Box>
               </Stack>
             </Panel>
           </Box>

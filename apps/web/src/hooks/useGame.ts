@@ -3,12 +3,20 @@ import {
   DEFAULT_SETTINGS,
   type GameSettings,
   type LeaderboardEntry,
-  type Profile
+  type Profile,
+  type PowerupType
 } from "@snake/contracts";
 import { createInitialState, setDirection, stepGame } from "../engine/gameEngine";
 import { useGameLoop } from "./useGameLoop";
 import type { Direction, GameState } from "../types/game";
 import type { GameService } from "../services/gameService";
+
+// Default powerup types for Classic mode
+const DEFAULT_POWERUPS: PowerupType[] = [
+  { effect: "double_points", value: 2, color: "#FDB813" }
+];
+
+const DEFAULT_MAX_CONCURRENT_FOODS = 1;
 
 type UseGameResult = {
   game: GameState;
@@ -26,7 +34,9 @@ type UseGameResult = {
 
 export const useGame = (service: GameService, activeProfileId?: string): UseGameResult => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  const [game, setGame] = useState<GameState>(() => createInitialState(DEFAULT_SETTINGS));
+  const [game, setGame] = useState<GameState>(() => 
+    createInitialState(DEFAULT_SETTINGS, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS)
+  );
   const [player, setPlayer] = useState<Profile | null>(null);
   const [highScore, setHighScore] = useState(0);
   const [activeLeaderboard, setActiveLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -57,7 +67,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
         setActiveLeaderboard(activeLeaderboardResponse.entries);
         setGlobalLeaderboard(globalLeaderboardResponse.entries);
         setSettings(loadedSettings);
-        setGame(createInitialState(loadedSettings));
+        setGame(createInitialState(loadedSettings, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS));
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load game";
         setError(message);
@@ -77,7 +87,7 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
       if (current.status === "game-over") {
         runStartRef.current = Date.now();
         return {
-          ...createInitialState(settings),
+          ...createInitialState(settings, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS),
           status: "running"
         };
       }
@@ -96,16 +106,16 @@ export const useGame = (service: GameService, activeProfileId?: string): UseGame
 
   const resetGame = useCallback(() => {
     runStartRef.current = null;
-    setGame(createInitialState(settings));
+    setGame(createInitialState(settings, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS));
   }, [settings]);
 
   const onTick = useCallback(() => {
-    setGame((current) => stepGame(current, settings));
+    setGame((current) => stepGame(current, settings, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS));
   }, [settings]);
 
   useGameLoop({
     enabled: game.status === "running",
-    ticksPerSecond: settings.speed,
+    ticksPerSecond: game.currentSpeed,
     onTick
   });
 
