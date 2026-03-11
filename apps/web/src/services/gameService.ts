@@ -11,7 +11,7 @@ import type {
 export interface GameService {
   getProfile(): Promise<Profile>;
   getHighScore(): Promise<HighScoreResponse>;
-  getLeaderboard(limit: number): Promise<LeaderboardResponse>;
+  getLeaderboard(limit: number, scope?: "active" | "global"): Promise<LeaderboardResponse>;
   saveRun(run: RunRecordInput): Promise<RunRecord>;
   listRecentRuns(limit: number): Promise<RecentRunsResponse>;
   getSettings(): Promise<GameSettings>;

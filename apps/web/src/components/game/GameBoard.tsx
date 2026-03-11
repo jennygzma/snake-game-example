@@ -1,20 +1,21 @@
-import { Box } from "@mui/material";
-import type { Cell } from "../../types/game";
-import { gameTokens } from "../../theme/tokens";
+import { Box, useTheme } from "@mui/material";
+import type { Cell, FoodItem } from "../../types/game";
 
 type GameBoardProps = {
   gridSize: number;
   snake: Cell[];
-  food: Cell;
+  foods: FoodItem[];
+  snakeHeadImage?: string;
 };
 
 const toKey = (cell: Cell): string => `${cell.x}:${cell.y}`;
 
-export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
+export const GameBoard = ({ gridSize, snake, foods, snakeHeadImage }: GameBoardProps) => {
+  const theme = useTheme();
   const snakeSet = new Set(snake.map(toKey));
   const head = snake[0];
   const snakeHeadKey = head ? toKey(head) : "";
-  const foodKey = toKey(food);
+  const foodMap = new Map(foods.map(f => [toKey(f.position), f.color]));
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => ({
     x: index % gridSize,
     y: Math.floor(index / gridSize)
@@ -29,15 +30,16 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
         aspectRatio: "1 / 1",
         mx: "auto",
         border: "1px solid",
-        borderColor: "divider",
-        borderRadius: `${gameTokens.radius.sm}px`,
+        borderColor: theme.ui.gameBoard.border,
+        borderRadius: 1,
         overflow: "hidden",
-        backgroundColor: gameTokens.colors.boardBg
+        backgroundColor: theme.game.boardBg
       }}
     >
       {cells.map((cell) => {
         const key = toKey(cell);
-        const isFood = key === foodKey;
+        const foodColor = foodMap.get(key);
+        const isFood = foodColor !== undefined;
         const isSnake = snakeSet.has(key);
         const isHead = key === snakeHeadKey;
 
@@ -45,14 +47,17 @@ export const GameBoard = ({ gridSize, snake, food }: GameBoardProps) => {
           <Box
             key={key}
             sx={{
-              border: `1px solid ${gameTokens.colors.boardGrid}`,
+              border: `1px solid ${theme.game.boardGrid}`,
               backgroundColor: isHead
-                ? gameTokens.colors.snakeHead
+                ? theme.game.snakeHead
                 : isSnake
-                  ? gameTokens.colors.snake
+                  ? theme.game.snake
                   : isFood
-                    ? gameTokens.colors.food
-                    : "transparent"
+                    ? foodColor
+                    : "transparent",
+              backgroundImage: isHead && snakeHeadImage ? `url(${snakeHeadImage})` : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center"
             }}
           />
         );

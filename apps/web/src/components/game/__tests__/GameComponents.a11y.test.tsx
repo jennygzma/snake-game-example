@@ -3,27 +3,33 @@ import { ThemeProvider } from "@mui/material";
 import { render } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
-import { appTheme } from "../../theme/theme";
-import { GameBoard } from "./GameBoard";
-import { GameOverScreen } from "./GameOverScreen";
-import { LeaderboardPanel } from "./LeaderboardPanel";
-import { ScorePanel } from "./ScorePanel";
+import { appTheme } from "../../../theme/theme";
+import { GameBoard } from "../GameBoard";
+import { GameOverScreen } from "../GameOverScreen";
+import { LeaderboardPanel } from "../LeaderboardPanel";
+import { ScorePanel } from "../ScorePanel";
 
 const demoPlayer: Profile = {
-  id: "player-1",
-  name: "Jenny"
+  id: "test-player-1",
+  name: "Test Player",
+  avatarBase64: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  isActive: true
 };
 
 const leaderboardEntries: LeaderboardEntry[] = [
   {
     rank: 1,
     userId: "u-1",
+    profileName: "Player 1",
     score: 42,
     endedAt: "2026-03-08T12:00:00.000Z"
   },
   {
     rank: 2,
     userId: "u-2",
+    profileName: "Player 2",
     score: 37,
     endedAt: "2026-03-07T12:00:00.000Z"
   }
@@ -40,7 +46,7 @@ describe("Game components accessibility", () => {
             { x: 1, y: 5 },
             { x: 0, y: 5 }
           ]}
-          food={{ x: 7, y: 3 }}
+          foods={[{ position: { x: 7, y: 3 }, effect: "double_points", value: 2, color: "#FDB813" }]}
         />
       </ThemeProvider>
     );
