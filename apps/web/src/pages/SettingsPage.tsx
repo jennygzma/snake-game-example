@@ -51,6 +51,7 @@ export const SettingsPage = () => {
   const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [sharingItem, setSharingItem] = useState<{ id: string; name: string; type: "theme" | "variation" } | null>(null);
+  const [shareStatus, setShareStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const editingVariation: GameVariation | undefined =
     editingVariationId ? variations.find((variation) => variation.id === editingVariationId) : undefined;
@@ -112,10 +113,15 @@ export const SettingsPage = () => {
       } else {
         await hubService.shareVariation({ variationId: sharingItem.id, description });
       }
+      setShareStatus({
+        type: "success",
+        message: `${sharingItem.type === "theme" ? "Theme" : "Variation"} "${sharingItem.name}" shared to Hub.`
+      });
       setShareDialogOpen(false);
       setSharingItem(null);
     } catch (error) {
-      console.error("Failed to share:", error);
+      const message = error instanceof Error ? error.message : "Failed to share item";
+      setShareStatus({ type: "error", message });
     }
   };
 
@@ -150,6 +156,17 @@ export const SettingsPage = () => {
           {variationsError && (
             <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
               {variationsError}
+            </Typography>
+          )}
+          {shareStatus && activeTab === 0 && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: (theme) =>
+                  shareStatus.type === "error" ? theme.ui.settings.errorText : theme.palette.success.main
+              }}
+            >
+              {shareStatus.message}
             </Typography>
           )}
           <VariationEditor
@@ -296,6 +313,17 @@ export const SettingsPage = () => {
           {error && (
             <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
               {error}
+            </Typography>
+          )}
+          {shareStatus && activeTab === 1 && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: (theme) =>
+                  shareStatus.type === "error" ? theme.ui.settings.errorText : theme.palette.success.main
+              }}
+            >
+              {shareStatus.message}
             </Typography>
           )}
           <Box>

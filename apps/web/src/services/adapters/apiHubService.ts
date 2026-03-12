@@ -35,7 +35,17 @@ const request = async <T>(path: string, schema: ZodType<T>, init?: RequestInit):
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    const fallback = `API request failed: ${response.status} ${response.statusText}`;
+    try {
+      const errorJson = await response.json();
+      const message =
+        (typeof errorJson?.message === "string" && errorJson.message) ||
+        (typeof errorJson?.error === "string" && errorJson.error) ||
+        fallback;
+      throw new Error(message);
+    } catch {
+      throw new Error(fallback);
+    }
   }
 
   const json = await response.json();

@@ -6,45 +6,48 @@ import { HubVariationCard } from "../components/hub/HubVariationCard";
 import { HubFilters } from "../components/hub/HubFilters";
 import { HubPagination } from "../components/hub/HubPagination";
 import type { HubSortBy, HubThemeWithCreator, HubVariationWithCreator } from "@snake/contracts";
+import { useHub } from "../hooks/useHub";
 
 export const HubPage = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | undefined>();
-  const [sortBy, setSortBy] = useState<HubSortBy>("recent");
-  const [page, setPage] = useState(1);
-
-  // Placeholder data - will be replaced with useHub hook in step 9
-  const loading = false;
-  const themes: HubThemeWithCreator[] = [];
-  const variations: HubVariationWithCreator[] = [];
-  const themesTotal = 0;
-  const variationsTotal = 0;
-  const limit = 20;
+  const themesHub = useHub("themes");
+  const variationsHub = useHub("variations");
+  const currentHub = activeTab === 0 ? themesHub : variationsHub;
 
   const handleFavoriteTheme = async (id: string) => {
-    console.log("Favorite theme:", id);
-    // Will be implemented with useHub hook
+    const item = themesHub.items.find((hubItem) => hubItem.id === id) as HubThemeWithCreator | undefined;
+    if (!item) return;
+    if (item.isFavorited) {
+      await themesHub.unfavorite(id);
+    } else {
+      await themesHub.favorite(id);
+    }
   };
 
   const handleCopyTheme = async (id: string) => {
-    console.log("Copy theme:", id);
-    // Will be implemented with useHub hook
+    await themesHub.copy(id);
+    await themesHub.refetch();
   };
 
   const handleFavoriteVariation = async (id: string) => {
-    console.log("Favorite variation:", id);
-    // Will be implemented with useHub hook
+    const item = variationsHub.items.find((hubItem) => hubItem.id === id) as HubVariationWithCreator | undefined;
+    if (!item) return;
+    if (item.isFavorited) {
+      await variationsHub.unfavorite(id);
+    } else {
+      await variationsHub.favorite(id);
+    }
   };
 
   const handleCopyVariation = async (id: string) => {
-    console.log("Copy variation:", id);
-    // Will be implemented with useHub hook
+    await variationsHub.copy(id);
+    await variationsHub.refetch();
   };
 
-  const totalPages = activeTab === 0
-    ? Math.ceil(themesTotal / limit)
-    : Math.ceil(variationsTotal / limit);
+  const themes = themesHub.items as HubThemeWithCreator[];
+  const variations = variationsHub.items as HubVariationWithCreator[];
+  const loading = currentHub.loading;
+  const error = currentHub.error;
 
   return (
     <PageLayout maxWidth="lg" spacing={4}>
@@ -60,9 +63,6 @@ export const HubPage = () => {
       <Box sx={{ borderBottom: 1, borderColor: (theme) => theme.ui.stats.tabsBorder }}>
         <Tabs value={activeTab} onChange={(_, newValue) => {
           setActiveTab(newValue);
-          setPage(1);
-          setSearchQuery("");
-          setDifficulty(undefined);
         }}>
           <Tab label="Themes" />
           <Tab label="Variations" />
@@ -70,14 +70,20 @@ export const HubPage = () => {
       </Box>
 
       <HubFilters
-        searchQuery={searchQuery}
-        difficulty={difficulty}
-        sortBy={sortBy}
+        searchQuery={currentHub.filters.query ?? ""}
+        difficulty={currentHub.filters.difficulty}
+        sortBy={(currentHub.filters.sortBy ?? "recent") as HubSortBy}
         showDifficulty={activeTab === 1}
-        onSearchChange={setSearchQuery}
-        onDifficultyChange={setDifficulty}
-        onSortChange={setSortBy}
+        onSearchChange={(query) => currentHub.updateFilters({ query: query || undefined })}
+        onDifficultyChange={(nextDifficulty) => currentHub.updateFilters({ difficulty: nextDifficulty })}
+        onSortChange={(nextSortBy) => currentHub.updateFilters({ sortBy: nextSortBy })}
       />
+
+      {error && (
+        <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
+          {error}
+        </Typography>
+      )}
 
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
@@ -140,9 +146,9 @@ export const HubPage = () => {
           )}
 
           <HubPagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
+            page={currentHub.currentPage}
+            totalPages={currentHub.totalPages}
+            onPageChange={(nextPage) => currentHub.updateFilters({ page: nextPage })}
           />
         </>
       )}

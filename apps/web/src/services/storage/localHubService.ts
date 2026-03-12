@@ -18,6 +18,8 @@ import type { HubService } from "../hubService";
 const SHARED_THEMES_KEY = "snake_shared_themes";
 const SHARED_VARIATIONS_KEY = "snake_shared_variations";
 const FAVORITES_KEY = "snake_favorites";
+const THEMES_KEY = "snake.themes";
+const PROFILES_KEY = "snake.profiles";
 
 interface LocalSharedTheme extends HubThemeWithCreator {
   originalThemeId: string;
@@ -123,7 +125,7 @@ export const localHubService: HubService = {
 
   async shareTheme(input: ShareThemeInput): Promise<ShareResponse> {
     // Get local themes
-    const themesStored = localStorage.getItem("snake_custom_themes");
+    const themesStored = localStorage.getItem(THEMES_KEY);
     const themes: CustomTheme[] = themesStored ? JSON.parse(themesStored) : [];
     const theme = themes.find((t) => t.id === input.themeId);
     
@@ -131,9 +133,11 @@ export const localHubService: HubService = {
       throw new Error("Theme not found");
     }
     
-    // Get active profile
-    const profileStored = localStorage.getItem("snake_active_profile");
-    const activeProfile = profileStored ? JSON.parse(profileStored) : null;
+    // Get active profile from profiles collection
+    const profileStored = localStorage.getItem(PROFILES_KEY);
+    const profiles: Array<{ id: string; name: string; avatarBase64?: string | null; isActive?: boolean }> =
+      profileStored ? JSON.parse(profileStored) : [];
+    const activeProfile = profiles.find((profile) => profile.isActive);
     
     if (!activeProfile) {
       throw new Error("No active profile");
@@ -156,7 +160,7 @@ export const localHubService: HubService = {
       creator: {
         profileId: activeProfile.id,
         profileName: activeProfile.name,
-        profileAvatar: activeProfile.avatarBase64
+        profileAvatar: activeProfile.avatarBase64 || undefined
       },
       isFavorited: false,
       originalThemeId: input.themeId
@@ -184,8 +188,10 @@ export const localHubService: HubService = {
       throw new Error("Variation not found");
     }
     
-    const profileStored = localStorage.getItem("snake_active_profile");
-    const activeProfile = profileStored ? JSON.parse(profileStored) : null;
+    const profileStored = localStorage.getItem(PROFILES_KEY);
+    const profiles: Array<{ id: string; name: string; avatarBase64?: string | null; isActive?: boolean }> =
+      profileStored ? JSON.parse(profileStored) : [];
+    const activeProfile = profiles.find((profile) => profile.isActive);
     
     if (!activeProfile) {
       throw new Error("No active profile");
@@ -211,7 +217,7 @@ export const localHubService: HubService = {
       creator: {
         profileId: activeProfile.id,
         profileName: activeProfile.name,
-        profileAvatar: activeProfile.avatarBase64
+        profileAvatar: activeProfile.avatarBase64 || undefined
       },
       isFavorited: false,
       originalVariationId: input.variationId
@@ -367,10 +373,10 @@ export const localHubService: HubService = {
       isActive: false
     };
     
-    const localStored = localStorage.getItem("snake_custom_themes");
+    const localStored = localStorage.getItem(THEMES_KEY);
     const localThemes: CustomTheme[] = localStored ? JSON.parse(localStored) : [];
     localThemes.push(localTheme);
-    localStorage.setItem("snake_custom_themes", JSON.stringify(localThemes));
+    localStorage.setItem(THEMES_KEY, JSON.stringify(localThemes));
     
     return localTheme;
   },
@@ -390,8 +396,9 @@ export const localHubService: HubService = {
     
     // Create local copy
     const localId = crypto.randomUUID();
-    const profileStored = localStorage.getItem("snake_active_profile");
-    const activeProfile = profileStored ? JSON.parse(profileStored) : { id: "user" };
+    const profileStored = localStorage.getItem(PROFILES_KEY);
+    const profiles: Array<{ id: string; isActive?: boolean }> = profileStored ? JSON.parse(profileStored) : [];
+    const activeProfile = profiles.find((profile) => profile.isActive) || { id: "user" };
     
     const localVariation: GameVariation = {
       id: localId,
