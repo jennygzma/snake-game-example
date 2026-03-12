@@ -7,8 +7,8 @@ import type {
 import { apiHubService } from "../services/adapters/apiHubService";
 import { localHubService } from "../services/storage/localHubService";
 
-const USE_API = import.meta.env.VITE_USE_API === "true";
-const hubService = USE_API ? apiHubService : localHubService;
+const SERVICE_MODE = import.meta.env.VITE_GAME_SERVICE_MODE;
+const hubService = SERVICE_MODE === "local" ? localHubService : apiHubService;
 
 interface UseHubResult {
   // Theme state
