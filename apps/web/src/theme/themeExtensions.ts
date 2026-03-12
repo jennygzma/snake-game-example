@@ -26,6 +26,7 @@ declare module "@mui/material/styles" {
       active?: string;
       gameActive?: string;
       statsActive?: string;
+      hubActive?: string;
       settingsActive?: string;
       add?: string;
       barChart?: string;
@@ -36,6 +37,7 @@ declare module "@mui/material/styles" {
       play?: string;
       pause?: string;
       photoCamera?: string;
+      public?: string;
       reset?: string;
       settings?: string;
       sportsEsports?: string;
@@ -162,6 +164,7 @@ declare module "@mui/material/styles" {
       active?: string;
       gameActive?: string;
       statsActive?: string;
+      hubActive?: string;
       settingsActive?: string;
       add?: string;
       barChart?: string;
@@ -172,6 +175,7 @@ declare module "@mui/material/styles" {
       play?: string;
       pause?: string;
       photoCamera?: string;
+      public?: string;
       reset?: string;
       settings?: string;
       sportsEsports?: string;

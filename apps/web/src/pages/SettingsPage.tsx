@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { Box, Card, CardActions, CardContent, Chip, Tab, Tabs, Typography } from "@mui/material";
 import type { CustomTheme, GameVariation, SaveThemeInput } from "@snake/contracts";
 import { PageLayout } from "../components/shared/PageLayout";
 import { IconActionButton } from "../components/shared/IconActionButton";
 import { SaveThemeDialog } from "../components/settings/SaveThemeDialog";
+import { ShareDialog } from "../components/hub/ShareDialog";
 import { ThemeEditor } from "../components/settings/ThemeEditor";
 import { ThemeGallery } from "../components/settings/ThemeGallery";
 import { VariationEditor } from "../components/settings/VariationEditor";
@@ -14,14 +15,23 @@ import { approvedIcons } from "../theme/approvedIcons";
 import { apiGameService } from "../services/adapters/apiGameService";
 import type { GameService } from "../services/gameService";
 import { localGameService } from "../services/storage/localGameService";
+import { apiHubService } from "../services/adapters/apiHubService";
+import type { HubService } from "../services/hubService";
+import { localHubService } from "../services/storage/localHubService";
 
 const resolveGameService = (): GameService => {
   const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
   return mode === "local" ? localGameService : apiGameService;
 };
 
+const resolveHubService = (): HubService => {
+  const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
+  return mode === "local" ? localHubService : apiHubService;
+};
+
 export const SettingsPage = () => {
   const gameService = useMemo(resolveGameService, []);
+  const hubService = useMemo(resolveHubService, []);
   const { activeProfile } = useProfile();
   const { themes, activeTheme, loading, error, createTheme, updateTheme, deleteTheme, activateTheme } = useTheme();
   const {
@@ -39,6 +49,12 @@ export const SettingsPage = () => {
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
+  
+  const [sharedThemeIds, setSharedThemeIds] = useState<string[]>([]);
+  const [sharedVariationIds, setSharedVariationIds] = useState<string[]>([]);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [itemToShare, setItemToShare] = useState<{ type: "theme" | "variation"; item: CustomTheme | GameVariation } | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const editingVariation: GameVariation | undefined =
     editingVariationId ? variations.find((variation) => variation.id === editingVariationId) : undefined;
@@ -88,6 +104,56 @@ export const SettingsPage = () => {
     await deleteVariation(variationId);
     if (activeVariationId === variationId) {
       await handleActivateVariation(null);
+    }
+  };
+
+  const handleShareTheme = async (themeId: string, description?: string) => {
+    await hubService.shareTheme({ themeId, description });
+    setSharedThemeIds(prev => [...prev, themeId]);
+  };
+
+  const handleUnshareTheme = async (themeId: string) => {
+    // TODO: Get sharedId from mapping
+    await hubService.unshareTheme(themeId);
+    setSharedThemeIds(prev => prev.filter(id => id !== themeId));
+  };
+
+  const handleShareVariation = async (variationId: string, description?: string) => {
+    await hubService.shareVariation({ variationId, description });
+    setSharedVariationIds(prev => [...prev, variationId]);
+  };
+
+  const handleUnshareVariation = async (variationId: string) => {
+    // TODO: Get sharedId from mapping
+    await hubService.unshareVariation(variationId);
+    setSharedVariationIds(prev => prev.filter(id => id !== variationId));
+  };
+
+  const handleShareClick = (type: "theme" | "variation", item: CustomTheme | GameVariation) => {
+    setItemToShare({ type, item });
+    setShareDialogOpen(true);
+  };
+
+  const handleShareConfirm = async (description?: string) => {
+    if (!itemToShare) return;
+    setIsSharing(true);
+    try {
+      if (itemToShare.type === "theme") {
+        await handleShareTheme(itemToShare.item.id, description);
+      } else {
+        await handleShareVariation(itemToShare.item.id, description);
+      }
+      setShareDialogOpen(false);
+      setItemToShare(null);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleShareClose = () => {
+    if (!isSharing) {
+      setShareDialogOpen(false);
+      setItemToShare(null);
     }
   };
 
@@ -212,16 +278,49 @@ export const SettingsPage = () => {
                           ))}
                         </Box>
                       </CardContent>
-                      <CardActions sx={{ justifyContent: "flex-end", px: 2, pb: 2, pt: 0 }}>
-                        <IconActionButton
-                          size="small"
-                          variant="outlined"
-                          tone="neutral"
-                          icon={<approvedIcons.edit />}
-                          label={`Edit ${variation.name}`}
-                          iconOnly
-                          onClick={() => setEditingVariationId(variation.id)}
-                        />
+                      <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 0 }}>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <IconActionButton
+                            size="small"
+                            variant="outlined"
+                            tone="neutral"
+                            icon={<approvedIcons.edit />}
+                            label={`Edit ${variation.name}`}
+                            iconOnly
+                            onClick={() => setEditingVariationId(variation.id)}
+                          />
+                          <IconActionButton
+                            size="small"
+                            variant="text"
+                            tone="danger"
+                            icon={<approvedIcons.delete />}
+                            label={`Delete ${variation.name}`}
+                            iconOnly
+                            onClick={() => void handleDeleteVariation(variation.id)}
+                          />
+                          {!sharedVariationIds.includes(variation.id) && (
+                            <IconActionButton
+                              size="small"
+                              variant="outlined"
+                              tone="primary"
+                              icon={createElement(approvedIcons.public)}
+                              label={`Share ${variation.name} to Hub`}
+                              iconOnly
+                              onClick={() => handleShareClick("variation", variation)}
+                            />
+                          )}
+                          {sharedVariationIds.includes(variation.id) && (
+                            <IconActionButton
+                              size="small"
+                              variant="outlined"
+                              tone="neutral"
+                              icon={createElement(approvedIcons.public)}
+                              label={`Unshare ${variation.name} from Hub`}
+                              iconOnly
+                              onClick={() => void handleUnshareVariation(variation.id)}
+                            />
+                          )}
+                        </Box>
                         <IconActionButton
                           size="small"
                           variant="contained"
@@ -231,15 +330,6 @@ export const SettingsPage = () => {
                           iconOnly
                           disabled={isActive}
                           onClick={() => void handleActivateVariation(variation.id)}
-                        />
-                        <IconActionButton
-                          size="small"
-                          variant="text"
-                          tone="danger"
-                          icon={<approvedIcons.delete />}
-                          label={`Delete ${variation.name}`}
-                          iconOnly
-                          onClick={() => void handleDeleteVariation(variation.id)}
                         />
                       </CardActions>
                     </Card>
@@ -272,6 +362,7 @@ export const SettingsPage = () => {
             <ThemeGallery
               themes={themes}
               activeThemeId={activeTheme?.id}
+              sharedThemeIds={sharedThemeIds}
               onActivate={async (id) => {
                 await activateTheme(id);
               }}
@@ -279,6 +370,8 @@ export const SettingsPage = () => {
               onDelete={async (id) => {
                 await deleteTheme(id);
               }}
+              onShare={handleShareTheme}
+              onUnshare={handleUnshareTheme}
             />
           </Box>
         </>
@@ -292,6 +385,15 @@ export const SettingsPage = () => {
           setPendingThemeData(null);
         }}
         onSave={handleSaveTheme}
+      />
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={handleShareClose}
+        onConfirm={handleShareConfirm}
+        itemName={itemToShare?.item.name || ""}
+        itemType={itemToShare?.type || "theme"}
+        isSharing={isSharing}
       />
     </PageLayout>
   );

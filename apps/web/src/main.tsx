@@ -11,6 +11,7 @@ import { GamePage } from "./pages/GamePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { HubPage } from "./pages/HubPage";
 
 const AppContent = () => {
   const { theme } = useAppTheme();
@@ -69,6 +70,7 @@ const AppContent = () => {
         <AppShell>
           <Routes>
             <Route path="/" element={<GamePage />} />
+            <Route path="/hub" element={<HubPage />} />
             <Route path="/design" element={<SettingsPage />} />
             <Route path="/settings" element={<Navigate to="/design" replace />} />
             <Route path="/stats" element={<StatsPage />} />

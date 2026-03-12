@@ -1,25 +1,67 @@
+import { createElement, useState } from "react";
 import { Box, Typography, Card, CardContent, CardActions, Chip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import type { CustomTheme } from "@snake/contracts";
 import { IconActionButton } from "../shared/IconActionButton";
+import { ShareDialog } from "../hub/ShareDialog";
 import { approvedIcons } from "../../theme/approvedIcons";
 
 interface ThemeGalleryProps {
   themes: CustomTheme[];
   activeThemeId?: string | null;
+  sharedThemeIds?: string[];
   onActivate: (themeId: string) => void | Promise<void>;
   onEdit: (theme: CustomTheme) => void;
   onDelete: (themeId: string) => void | Promise<void>;
+  onShare?: (themeId: string, description?: string) => void | Promise<void>;
+  onUnshare?: (themeId: string) => void | Promise<void>;
 }
 
 export const ThemeGallery = ({
   themes,
   activeThemeId,
+  sharedThemeIds = [],
   onActivate,
   onEdit,
-  onDelete
+  onDelete,
+  onShare,
+  onUnshare
 }: ThemeGalleryProps) => {
   const muiTheme = useTheme();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [themeToShare, setThemeToShare] = useState<CustomTheme | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleShareClick = (theme: CustomTheme) => {
+    setThemeToShare(theme);
+    setShareDialogOpen(true);
+  };
+
+  const handleShareConfirm = async (description?: string) => {
+    if (themeToShare && onShare) {
+      setIsSharing(true);
+      try {
+        await onShare(themeToShare.id, description);
+        setShareDialogOpen(false);
+        setThemeToShare(null);
+      } finally {
+        setIsSharing(false);
+      }
+    }
+  };
+
+  const handleShareClose = () => {
+    if (!isSharing) {
+      setShareDialogOpen(false);
+      setThemeToShare(null);
+    }
+  };
+
+  const handleUnshare = async (themeId: string) => {
+    if (onUnshare) {
+      await onUnshare(themeId);
+    }
+  };
 
   if (themes.length === 0) {
     return (
@@ -174,6 +216,28 @@ export const ThemeGallery = ({
                   onClick={() => onDelete(theme.id)}
                   disabled={isActive}
                 />
+                {onShare && !sharedThemeIds.includes(theme.id) && (
+                  <IconActionButton
+                    size="small"
+                    variant="outlined"
+                    tone="primary"
+                    icon={createElement(approvedIcons.public)}
+                    label={`Share ${theme.name} to Hub`}
+                    iconOnly
+                    onClick={() => handleShareClick(theme)}
+                  />
+                )}
+                {onUnshare && sharedThemeIds.includes(theme.id) && (
+                  <IconActionButton
+                    size="small"
+                    variant="outlined"
+                    tone="neutral"
+                    icon={createElement(approvedIcons.public)}
+                    label={`Unshare ${theme.name} from Hub`}
+                    iconOnly
+                    onClick={() => handleUnshare(theme.id)}
+                  />
+                )}
               </Box>
               {!isActive && (
                 <IconActionButton
@@ -203,6 +267,15 @@ export const ThemeGallery = ({
           </Card>
         );
       })}
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={handleShareClose}
+        onConfirm={handleShareConfirm}
+        itemName={themeToShare?.name || ""}
+        itemType="theme"
+        isSharing={isSharing}
+      />
     </Box>
   );
 };
