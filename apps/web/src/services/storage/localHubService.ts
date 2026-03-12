@@ -27,7 +27,7 @@ const SHARED_VARIATIONS_KEY = "snake.hub.shared_variations";
 const THEME_FAVORITES_KEY = "snake.hub.theme_favorites";
 const VARIATION_FAVORITES_KEY = "snake.hub.variation_favorites";
 const THEMES_KEY = "snake.themes";
-const VARIATIONS_KEY = "snake.variations";
+const VARIATIONS_KEY = "snake_game_variations";
 const PROFILES_KEY = "snake.profiles";
 
 const getActiveProfileId = (): string => {

@@ -50,11 +50,12 @@ export const SettingsPage = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [pendingThemeData, setPendingThemeData] = useState<SaveThemeInput | null>(null);
   
-  const [sharedThemeIds, setSharedThemeIds] = useState<string[]>([]);
-  const [sharedVariationIds, setSharedVariationIds] = useState<string[]>([]);
+  const [sharedThemeMap, setSharedThemeMap] = useState<Record<string, string>>({});
+  const [sharedVariationMap, setSharedVariationMap] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [itemToShare, setItemToShare] = useState<{ type: "theme" | "variation"; item: CustomTheme | GameVariation } | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const editingVariation: GameVariation | undefined =
     editingVariationId ? variations.find((variation) => variation.id === editingVariationId) : undefined;
@@ -108,25 +109,31 @@ export const SettingsPage = () => {
   };
 
   const handleShareTheme = async (themeId: string, description?: string) => {
-    await hubService.shareTheme({ themeId, description });
-    setSharedThemeIds(prev => [...prev, themeId]);
+    const response = await hubService.shareTheme({ themeId, description });
+    setSharedThemeMap((prev) => ({ ...prev, [themeId]: response.sharedId }));
   };
 
   const handleUnshareTheme = async (themeId: string) => {
-    // TODO: Get sharedId from mapping
-    await hubService.unshareTheme(themeId);
-    setSharedThemeIds(prev => prev.filter(id => id !== themeId));
+    const sharedId = sharedThemeMap[themeId];
+    if (!sharedId) {
+      throw new Error("Theme is not shared yet");
+    }
+    await hubService.unshareTheme(sharedId);
+    setSharedThemeMap(({ [themeId]: _removed, ...rest }) => rest);
   };
 
   const handleShareVariation = async (variationId: string, description?: string) => {
-    await hubService.shareVariation({ variationId, description });
-    setSharedVariationIds(prev => [...prev, variationId]);
+    const response = await hubService.shareVariation({ variationId, description });
+    setSharedVariationMap((prev) => ({ ...prev, [variationId]: response.sharedId }));
   };
 
   const handleUnshareVariation = async (variationId: string) => {
-    // TODO: Get sharedId from mapping
-    await hubService.unshareVariation(variationId);
-    setSharedVariationIds(prev => prev.filter(id => id !== variationId));
+    const sharedId = sharedVariationMap[variationId];
+    if (!sharedId) {
+      throw new Error("Variation is not shared yet");
+    }
+    await hubService.unshareVariation(sharedId);
+    setSharedVariationMap(({ [variationId]: _removed, ...rest }) => rest);
   };
 
   const handleShareClick = (type: "theme" | "variation", item: CustomTheme | GameVariation) => {
@@ -137,6 +144,7 @@ export const SettingsPage = () => {
   const handleShareConfirm = async (description?: string) => {
     if (!itemToShare) return;
     setIsSharing(true);
+    setShareError(null);
     try {
       if (itemToShare.type === "theme") {
         await handleShareTheme(itemToShare.item.id, description);
@@ -145,6 +153,8 @@ export const SettingsPage = () => {
       }
       setShareDialogOpen(false);
       setItemToShare(null);
+    } catch (error) {
+      setShareError(error instanceof Error ? error.message : "Failed to share item");
     } finally {
       setIsSharing(false);
     }
@@ -188,6 +198,11 @@ export const SettingsPage = () => {
           {variationsError && (
             <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
               {variationsError}
+            </Typography>
+          )}
+          {shareError && (
+            <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
+              {shareError}
             </Typography>
           )}
           <VariationEditor
@@ -298,7 +313,7 @@ export const SettingsPage = () => {
                             iconOnly
                             onClick={() => void handleDeleteVariation(variation.id)}
                           />
-                          {!sharedVariationIds.includes(variation.id) && (
+                          {!sharedVariationMap[variation.id] && (
                             <IconActionButton
                               size="small"
                               variant="outlined"
@@ -309,7 +324,7 @@ export const SettingsPage = () => {
                               onClick={() => handleShareClick("variation", variation)}
                             />
                           )}
-                          {sharedVariationIds.includes(variation.id) && (
+                          {sharedVariationMap[variation.id] && (
                             <IconActionButton
                               size="small"
                               variant="outlined"
@@ -317,7 +332,11 @@ export const SettingsPage = () => {
                               icon={createElement(approvedIcons.public)}
                               label={`Unshare ${variation.name} from Hub`}
                               iconOnly
-                              onClick={() => void handleUnshareVariation(variation.id)}
+                              onClick={() => {
+                                void handleUnshareVariation(variation.id).catch((error) => {
+                                  setShareError(error instanceof Error ? error.message : "Failed to unshare variation");
+                                });
+                              }}
                             />
                           )}
                         </Box>
@@ -348,6 +367,11 @@ export const SettingsPage = () => {
               {error}
             </Typography>
           )}
+          {shareError && (
+            <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
+              {shareError}
+            </Typography>
+          )}
           <Box>
             <ThemeEditor
               theme={editingTheme || undefined}
@@ -362,7 +386,7 @@ export const SettingsPage = () => {
             <ThemeGallery
               themes={themes}
               activeThemeId={activeTheme?.id}
-              sharedThemeIds={sharedThemeIds}
+              sharedThemeIds={Object.keys(sharedThemeMap)}
               onActivate={async (id) => {
                 await activateTheme(id);
               }}
@@ -370,8 +394,22 @@ export const SettingsPage = () => {
               onDelete={async (id) => {
                 await deleteTheme(id);
               }}
-              onShare={handleShareTheme}
-              onUnshare={handleUnshareTheme}
+              onShare={async (themeId, description) => {
+                setShareError(null);
+                try {
+                  await handleShareTheme(themeId, description);
+                } catch (error) {
+                  setShareError(error instanceof Error ? error.message : "Failed to share theme");
+                }
+              }}
+              onUnshare={async (themeId) => {
+                setShareError(null);
+                try {
+                  await handleUnshareTheme(themeId);
+                } catch (error) {
+                  setShareError(error instanceof Error ? error.message : "Failed to unshare theme");
+                }
+              }}
             />
           </Box>
         </>

@@ -4,8 +4,6 @@ import { apiHubService } from "../services/adapters/apiHubService";
 import { localHubService } from "../services/storage/localHubService";
 import type { HubService } from "../services/hubService";
 import { useProfile } from "./useProfile";
-import { useTheme } from "./useTheme";
-import { useVariations } from "./useVariations";
 
 const resolveHubService = (): HubService => {
   const mode = import.meta.env.VITE_GAME_SERVICE_MODE;
@@ -15,8 +13,6 @@ const resolveHubService = (): HubService => {
 export const useHub = (contentType: "themes" | "variations") => {
   const hubService = useMemo(resolveHubService, []);
   const { activeProfile } = useProfile();
-  const { createTheme } = useTheme();
-  const { createVariation } = useVariations(activeProfile?.id);
 
   const [themes, setThemes] = useState<SharedThemeWithCreator[]>([]);
   const [variations, setVariations] = useState<SharedVariationWithCreator[]>([]);
@@ -98,86 +94,176 @@ export const useHub = (contentType: "themes" | "variations") => {
 
   const handleFavoriteTheme = useCallback(
     async (themeId: string) => {
+      const alreadyFavorited = favoritedThemeIds.includes(themeId);
+      if (alreadyFavorited) return;
       try {
         // Optimistic update
         setFavoritedThemeIds((prev) => [...prev, themeId]);
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, favoriteCount: theme.favoriteCount + 1 }
+              : theme
+          )
+        );
         await hubService.favoriteTheme(themeId);
       } catch (error) {
         // Rollback on error
         setFavoritedThemeIds((prev) => prev.filter((id) => id !== themeId));
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, favoriteCount: Math.max(0, theme.favoriteCount - 1) }
+              : theme
+          )
+        );
         console.error("Failed to favorite theme:", error);
       }
     },
-    [hubService]
+    [hubService, favoritedThemeIds]
   );
 
   const handleUnfavoriteTheme = useCallback(
     async (themeId: string) => {
+      const isFavorited = favoritedThemeIds.includes(themeId);
+      if (!isFavorited) return;
       try {
         // Optimistic update
         setFavoritedThemeIds((prev) => prev.filter((id) => id !== themeId));
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, favoriteCount: Math.max(0, theme.favoriteCount - 1) }
+              : theme
+          )
+        );
         await hubService.unfavoriteTheme(themeId);
       } catch (error) {
         // Rollback on error
         setFavoritedThemeIds((prev) => [...prev, themeId]);
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, favoriteCount: theme.favoriteCount + 1 }
+              : theme
+          )
+        );
         console.error("Failed to unfavorite theme:", error);
       }
     },
-    [hubService]
+    [hubService, favoritedThemeIds]
   );
 
   const handleCopyTheme = useCallback(
     async (themeId: string) => {
       try {
-        const copiedTheme = await hubService.copyThemeToLocal(themeId);
-        await createTheme(copiedTheme);
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, usageCount: theme.usageCount + 1 }
+              : theme
+          )
+        );
+        await hubService.copyThemeToLocal(themeId);
       } catch (error) {
+        setThemes((prev) =>
+          prev.map((theme) =>
+            theme.id === themeId
+              ? { ...theme, usageCount: Math.max(0, theme.usageCount - 1) }
+              : theme
+          )
+        );
         console.error("Failed to copy theme:", error);
       }
     },
-    [hubService, createTheme]
+    [hubService]
   );
 
   const handleFavoriteVariation = useCallback(
     async (variationId: string) => {
+      const alreadyFavorited = favoritedVariationIds.includes(variationId);
+      if (alreadyFavorited) return;
       try {
         // Optimistic update
         setFavoritedVariationIds((prev) => [...prev, variationId]);
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, favoriteCount: variation.favoriteCount + 1 }
+              : variation
+          )
+        );
         await hubService.favoriteVariation(variationId);
       } catch (error) {
         // Rollback on error
         setFavoritedVariationIds((prev) => prev.filter((id) => id !== variationId));
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, favoriteCount: Math.max(0, variation.favoriteCount - 1) }
+              : variation
+          )
+        );
         console.error("Failed to favorite variation:", error);
       }
     },
-    [hubService]
+    [hubService, favoritedVariationIds]
   );
 
   const handleUnfavoriteVariation = useCallback(
     async (variationId: string) => {
+      const isFavorited = favoritedVariationIds.includes(variationId);
+      if (!isFavorited) return;
       try {
         // Optimistic update
         setFavoritedVariationIds((prev) => prev.filter((id) => id !== variationId));
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, favoriteCount: Math.max(0, variation.favoriteCount - 1) }
+              : variation
+          )
+        );
         await hubService.unfavoriteVariation(variationId);
       } catch (error) {
         // Rollback on error
         setFavoritedVariationIds((prev) => [...prev, variationId]);
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, favoriteCount: variation.favoriteCount + 1 }
+              : variation
+          )
+        );
         console.error("Failed to unfavorite variation:", error);
       }
     },
-    [hubService]
+    [hubService, favoritedVariationIds]
   );
 
   const handleCopyVariation = useCallback(
     async (variationId: string) => {
       try {
-        const copiedVariation = await hubService.copyVariationToLocal(variationId);
-        await createVariation(copiedVariation);
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, usageCount: variation.usageCount + 1 }
+              : variation
+          )
+        );
+        await hubService.copyVariationToLocal(variationId);
       } catch (error) {
+        setVariations((prev) =>
+          prev.map((variation) =>
+            variation.id === variationId
+              ? { ...variation, usageCount: Math.max(0, variation.usageCount - 1) }
+              : variation
+          )
+        );
         console.error("Failed to copy variation:", error);
       }
     },
-    [hubService, createVariation]
+    [hubService]
   );
 
   const handleQueryChange = useCallback((newQuery: string) => {
