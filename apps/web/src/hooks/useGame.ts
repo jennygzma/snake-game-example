@@ -1,21 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_SETTINGS,
+  type GameVariation,
   type GameSettings,
   type LeaderboardEntry,
-  type Profile
+  type Profile,
+  type PowerupType
 } from "@snake/contracts";
 import { createInitialState, setDirection, stepGame } from "../engine/gameEngine";
 import { useGameLoop } from "./useGameLoop";
 import type { Direction, GameState } from "../types/game";
 import type { GameService } from "../services/gameService";
+import { gameTokens } from "../theme/tokens";
+
+const DEFAULT_POWERUPS: PowerupType[] = [
+  { effect: "double_points", value: 2, color: gameTokens.colors.food }
+];
+const DEFAULT_MAX_CONCURRENT_FOODS = 1;
 
 type UseGameResult = {
   game: GameState;
   settings: GameSettings;
   player: Profile | null;
   highScore: number;
-  leaderboard: LeaderboardEntry[];
+  activeLeaderboard: LeaderboardEntry[];
+  globalLeaderboard: LeaderboardEntry[];
   error: string | null;
   startGame: () => void;
   resetGame: () => void;
@@ -23,31 +32,67 @@ type UseGameResult = {
   turn: (direction: Direction) => void;
 };
 
-export const useGame = (service: GameService): UseGameResult => {
+const toEffectiveSettings = (settings: GameSettings, variation: GameVariation | null): GameSettings => {
+  if (!variation) {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    speed: variation.baseSpeed,
+    gridSize: variation.gridSize,
+    variationId: variation.id
+  };
+};
+
+export const useGame = (
+  service: GameService,
+  activeProfileId?: string,
+  activeVariation?: GameVariation | null
+): UseGameResult => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-  const [game, setGame] = useState<GameState>(() => createInitialState(DEFAULT_SETTINGS));
+  const [game, setGame] = useState<GameState>(() =>
+    createInitialState(DEFAULT_SETTINGS, DEFAULT_POWERUPS, DEFAULT_MAX_CONCURRENT_FOODS)
+  );
   const [player, setPlayer] = useState<Profile | null>(null);
   const [highScore, setHighScore] = useState(0);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [activeLeaderboard, setActiveLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const runStartRef = useRef<number | null>(null);
+  const resolvedVariation = activeVariation ?? null;
+  const effectiveSettings = useMemo(
+    () => toEffectiveSettings(settings, resolvedVariation),
+    [resolvedVariation, settings]
+  );
+  const activePowerups = resolvedVariation?.powerupTypes ?? DEFAULT_POWERUPS;
+  const maxConcurrentFoods = resolvedVariation?.maxConcurrentFoods ?? DEFAULT_MAX_CONCURRENT_FOODS;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [profile, highScoreResponse, loadedSettings, leaderboardResponse] = await Promise.all([
-          service.getProfile(),
-          service.getHighScore(),
-          service.getSettings(),
-          service.getLeaderboard(10)
-        ]);
+        const [profile, highScoreResponse, loadedSettings, activeLeaderboardResponse, globalLeaderboardResponse] =
+          await Promise.all([
+            service.getProfile(),
+            service.getHighScore(),
+            service.getSettings(),
+            service.getLeaderboard(10, "active"),
+            service.getLeaderboard(10, "global")
+          ]);
 
         setPlayer(profile);
         setHighScore(highScoreResponse.highScore);
-        setLeaderboard(leaderboardResponse.entries);
+        setActiveLeaderboard(activeLeaderboardResponse.entries);
+        setGlobalLeaderboard(globalLeaderboardResponse.entries);
         setSettings(loadedSettings);
-        setGame(createInitialState(loadedSettings));
+        setGame(
+          createInitialState(
+            toEffectiveSettings(loadedSettings, resolvedVariation),
+            resolvedVariation?.powerupTypes ?? DEFAULT_POWERUPS,
+            resolvedVariation?.maxConcurrentFoods ?? DEFAULT_MAX_CONCURRENT_FOODS
+          )
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load game";
         setError(message);
@@ -55,7 +100,14 @@ export const useGame = (service: GameService): UseGameResult => {
     };
 
     void load();
-  }, [service]);
+  }, [activeProfileId, service]);
+
+  useEffect(() => {
+    if (game.status === "running" || game.status === "paused") {
+      return;
+    }
+    setGame(createInitialState(effectiveSettings, activePowerups, maxConcurrentFoods));
+  }, [activePowerups, effectiveSettings, game.status, maxConcurrentFoods]);
 
   const turn = useCallback((direction: Direction) => {
     setGame((current) => setDirection(current, direction));
@@ -67,14 +119,14 @@ export const useGame = (service: GameService): UseGameResult => {
       if (current.status === "game-over") {
         runStartRef.current = Date.now();
         return {
-          ...createInitialState(settings),
+          ...createInitialState(effectiveSettings, activePowerups, maxConcurrentFoods),
           status: "running"
         };
       }
       runStartRef.current = Date.now();
       return { ...current, status: "running" };
     });
-  }, [settings]);
+  }, [activePowerups, effectiveSettings, maxConcurrentFoods]);
 
   const togglePause = useCallback(() => {
     setGame((current) => {
@@ -86,16 +138,16 @@ export const useGame = (service: GameService): UseGameResult => {
 
   const resetGame = useCallback(() => {
     runStartRef.current = null;
-    setGame(createInitialState(settings));
-  }, [settings]);
+    setGame(createInitialState(effectiveSettings, activePowerups, maxConcurrentFoods));
+  }, [activePowerups, effectiveSettings, maxConcurrentFoods]);
 
   const onTick = useCallback(() => {
-    setGame((current) => stepGame(current, settings));
-  }, [settings]);
+    setGame((current) => stepGame(current, effectiveSettings, activePowerups, maxConcurrentFoods));
+  }, [activePowerups, effectiveSettings, maxConcurrentFoods]);
 
   useGameLoop({
     enabled: game.status === "running",
-    ticksPerSecond: settings.speed,
+    ticksPerSecond: game.currentSpeed,
     onTick
   });
 
@@ -108,12 +160,17 @@ export const useGame = (service: GameService): UseGameResult => {
         await service.saveRun({
           score: game.score,
           durationMs,
-          endedAt: new Date().toISOString()
+          endedAt: new Date().toISOString(),
+          variationId: resolvedVariation?.id
         });
 
         setHighScore((current) => Math.max(current, game.score));
-        const leaderboardResponse = await service.getLeaderboard(10);
-        setLeaderboard(leaderboardResponse.entries);
+        const [activeLeaderboardResponse, globalLeaderboardResponse] = await Promise.all([
+          service.getLeaderboard(10, "active"),
+          service.getLeaderboard(10, "global")
+        ]);
+        setActiveLeaderboard(activeLeaderboardResponse.entries);
+        setGlobalLeaderboard(globalLeaderboardResponse.entries);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to save score";
         setError(message);
@@ -121,23 +178,34 @@ export const useGame = (service: GameService): UseGameResult => {
     };
 
     void persist();
-  }, [game.score, game.status, service]);
+  }, [game.score, game.status, resolvedVariation?.id, service]);
 
-  const result = useMemo(
+  return useMemo(
     () => ({
       game,
-      settings,
+      settings: effectiveSettings,
       player,
       highScore,
-      leaderboard,
+      activeLeaderboard,
+      globalLeaderboard,
       error,
       startGame,
       resetGame,
       togglePause,
       turn
     }),
-    [error, game, highScore, leaderboard, player, resetGame, settings, startGame, togglePause, turn]
+    [
+      activeLeaderboard,
+      error,
+      game,
+      globalLeaderboard,
+      highScore,
+      player,
+      resetGame,
+      effectiveSettings,
+      startGame,
+      togglePause,
+      turn
+    ]
   );
-
-  return result;
 };

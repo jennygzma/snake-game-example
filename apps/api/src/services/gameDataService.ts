@@ -1,89 +1,62 @@
-import {
-  DEFAULT_SETTINGS,
-  type GameSettings,
-  type HighScoreResponse,
-  type LeaderboardResponse,
-  type Profile,
-  type RecentRunsResponse,
-  type RunRecord,
-  type RunRecordInput
+import type {
+  GameSettings,
+  HighScoreResponse,
+  LeaderboardQuery,
+  LeaderboardResponse,
+  Profile,
+  RecentRunsResponse,
+  RunRecord,
+  RunRecordInput
 } from "@snake/contracts";
+import type { Database } from "better-sqlite3";
+import { profileQueries } from "../db/profileQueries";
+import { gameQueries } from "../db/gameQueries";
 
-type Store = {
-  profile: Profile;
-  settings: GameSettings;
-  runs: RunRecord[];
-};
+export const createGameDataService = (db: Database) => {
+  const profiles = profileQueries(db);
+  const games = gameQueries(db);
 
-const store: Store = {
-  profile: {
-    id: "dev-user-1",
-    name: "Player"
-  },
-  settings: DEFAULT_SETTINGS,
-  runs: [
-    {
-      id: "seed-run-1",
-      userId: "dev-user-1",
-      score: 14,
-      durationMs: 42000,
-      endedAt: new Date(Date.now() - 86400000).toISOString()
-    },
-    {
-      id: "seed-run-2",
-      userId: "dev-user-1",
-      score: 9,
-      durationMs: 32000,
-      endedAt: new Date(Date.now() - 172800000).toISOString()
+  const getActiveProfile = (): Profile => {
+    const profile = profiles.getActive();
+    if (!profile) {
+      throw new Error("NO_ACTIVE_PROFILE");
     }
-  ]
-};
+    return profile;
+  };
 
-export const gameDataService = {
-  getProfile(): Profile {
-    return store.profile;
-  },
+  return {
+    getProfile(): Profile {
+      return getActiveProfile();
+    },
 
-  getHighScore(): HighScoreResponse {
-    const highScore = store.runs.reduce((best, run) => Math.max(best, run.score), 0);
-    return { highScore };
-  },
+    getHighScore(): HighScoreResponse {
+      const profile = getActiveProfile();
+      return { highScore: games.getHighScoreByProfileId(profile.id) };
+    },
 
-  getLeaderboard(limit: number): LeaderboardResponse {
-    const entries = [...store.runs]
-      .sort((a, b) => b.score - a.score || Date.parse(b.endedAt) - Date.parse(a.endedAt))
-      .slice(0, Math.max(1, limit))
-      .map((run, index) => ({
-        rank: index + 1,
-        userId: run.userId,
-        score: run.score,
-        endedAt: run.endedAt
-      }));
+    getLeaderboard(limit: number, scope: "active" | "global", query?: LeaderboardQuery): LeaderboardResponse {
+      const profile = getActiveProfile();
+      return { entries: games.listLeaderboard(limit, scope, profile.id, query?.variationId) };
+    },
 
-    return { entries };
-  },
+    saveRun(input: RunRecordInput): RunRecord {
+      const profile = getActiveProfile();
+      return games.saveRun(profile.id, input);
+    },
 
-  saveRun(input: RunRecordInput): RunRecord {
-    const run: RunRecord = {
-      id: crypto.randomUUID(),
-      userId: store.profile.id,
-      ...input
-    };
+    listRecentRuns(limit: number): RecentRunsResponse {
+      const profile = getActiveProfile();
+      return { runs: games.listRecentRunsByProfileId(profile.id, limit) };
+    },
 
-    store.runs = [run, ...store.runs].slice(0, 1000);
-    return run;
-  },
+    getSettings(): GameSettings {
+      const profile = getActiveProfile();
+      return games.getSettingsByProfileId(profile.id);
+    },
 
-  listRecentRuns(limit: number): RecentRunsResponse {
-    return { runs: store.runs.slice(0, Math.max(1, limit)) };
-  },
-
-  getSettings(): GameSettings {
-    return store.settings;
-  },
-
-  saveSettings(settings: GameSettings): GameSettings {
-    store.settings = settings;
-    return store.settings;
-  }
+    saveSettings(settings: GameSettings): GameSettings {
+      const profile = getActiveProfile();
+      return games.saveSettingsByProfileId(profile.id, settings);
+    }
+  };
 };
