@@ -1,7 +1,33 @@
-import type { GameSettings } from "@snake/contracts";
-import type { Cell, Direction, GameState } from "../types/game";
+import type { GameSettings, PowerupType } from "@snake/contracts";
+import type { Cell, Direction, GameState, FoodItem, ActiveEffect, PowerupEffect } from "../types/game";
 import { collidesWithSnake } from "./collision";
 import { isInBounds, isSameCell, randomCell } from "./grid";
+
+// Game events for accessibility announcements
+export type GameEvent = 
+  | { type: "food_eaten"; effect: PowerupEffect; value: number }
+  | { type: "speed_changed"; newSpeed: number }
+  | { type: "blocks_added"; count: number }
+  | { type: "blocks_removed"; count: number }
+  | { type: "score_increased"; points: number };
+
+export type GameEventListener = (event: GameEvent) => void;
+
+const eventListeners: GameEventListener[] = [];
+
+export const addGameEventListener = (listener: GameEventListener): (() => void) => {
+  eventListeners.push(listener);
+  return () => {
+    const index = eventListeners.indexOf(listener);
+    if (index > -1) {
+      eventListeners.splice(index, 1);
+    }
+  };
+};
+
+const emitGameEvent = (event: GameEvent): void => {
+  eventListeners.forEach(listener => listener(event));
+};
 
 const START_LENGTH = 3;
 
@@ -19,29 +45,72 @@ const oppositeDirection: Record<Direction, Direction> = {
   right: "left"
 };
 
-const placeFood = (snake: Cell[], gridSize: number): Cell => {
+const placeFood = (snake: Cell[], existingFoods: FoodItem[], gridSize: number, powerupTypes: PowerupType[]): FoodItem => {
+  const existingPositions = [...snake, ...existingFoods.map(f => f.position)];
   let next = randomCell(gridSize);
-  while (collidesWithSnake(next, snake)) {
+  while (existingPositions.some(pos => isSameCell(pos, next))) {
     next = randomCell(gridSize);
   }
-  return next;
+
+  // Randomly select a powerup type
+  const powerup = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+  if (!powerup) {
+    throw new Error("No powerup types available");
+  }
+
+  return {
+    position: next,
+    effect: powerup.effect,
+    value: powerup.value,
+    color: powerup.color,
+    image: powerup.image
+  };
 };
 
-export const createInitialState = (settings: GameSettings): GameState => {
+const calculateSpeed = (baseSpeed: number, activeEffects: ActiveEffect[]): number => {
+  let speed = baseSpeed;
+  
+  for (const effect of activeEffects) {
+    if (effect.effect === "speed_increase") {
+      speed += effect.value;
+    } else if (effect.effect === "speed_decrease") {
+      speed = Math.max(1, speed - effect.value);
+    }
+  }
+  
+  return speed;
+};
+
+export const createInitialState = (
+  settings: GameSettings,
+  powerupTypes: PowerupType[],
+  maxConcurrentFoods: number
+): GameState => {
   const mid = Math.floor(settings.gridSize / 2);
   const snake: Cell[] = Array.from({ length: START_LENGTH }, (_, index) => ({
     x: mid - index,
     y: mid
   }));
 
+  const baseSpeed = settings.speed;
+  const foods: FoodItem[] = [];
+  
+  // Spawn initial foods
+  for (let i = 0; i < maxConcurrentFoods; i++) {
+    foods.push(placeFood(snake, foods, settings.gridSize, powerupTypes));
+  }
+
   return {
     snake,
-    food: placeFood(snake, settings.gridSize),
+    foods,
     direction: "right",
     pendingDirection: "right",
     score: 0,
     status: "idle",
-    tickCount: 0
+    tickCount: 0,
+    activeEffects: [],
+    currentSpeed: baseSpeed,
+    baseSpeed
   };
 };
 
@@ -56,7 +125,71 @@ export const setDirection = (state: GameState, direction: Direction): GameState 
   };
 };
 
-export const stepGame = (state: GameState, settings: GameSettings): GameState => {
+const applyEffect = (
+  state: GameState,
+  effect: PowerupEffect,
+  value: number
+): GameState => {
+  let newSnake = state.snake;
+  let newScore = state.score;
+  let newActiveEffects = [...state.activeEffects];
+
+  // Emit event for food eaten
+  emitGameEvent({ type: "food_eaten", effect, value });
+
+  switch (effect) {
+    case "speed_increase":
+    case "speed_decrease":
+      // Add to permanent effects
+      newActiveEffects.push({ effect, value });
+      break;
+    
+    case "add_blocks":
+      // Add blocks immediately to the tail
+      for (let i = 0; i < value; i++) {
+        const tail = newSnake[newSnake.length - 1];
+        if (tail) {
+          newSnake = [...newSnake, { ...tail }];
+        }
+      }
+      emitGameEvent({ type: "blocks_added", count: value });
+      break;
+    
+    case "subtract_blocks":
+      // Remove blocks from tail (but keep at least 1)
+      const blocksToRemove = Math.min(value, newSnake.length - 1);
+      newSnake = newSnake.slice(0, newSnake.length - blocksToRemove);
+      emitGameEvent({ type: "blocks_removed", count: blocksToRemove });
+      break;
+    
+    case "double_points":
+      newScore += value;
+      emitGameEvent({ type: "score_increased", points: value });
+      break;
+  }
+
+  const oldSpeed = state.currentSpeed;
+  const newSpeed = calculateSpeed(state.baseSpeed, newActiveEffects);
+  
+  if (newSpeed !== oldSpeed) {
+    emitGameEvent({ type: "speed_changed", newSpeed });
+  }
+
+  return {
+    ...state,
+    snake: newSnake,
+    score: newScore,
+    activeEffects: newActiveEffects,
+    currentSpeed: newSpeed
+  };
+};
+
+export const stepGame = (
+  state: GameState,
+  settings: GameSettings,
+  powerupTypes: PowerupType[],
+  maxConcurrentFoods: number
+): GameState => {
   if (state.status !== "running") return state;
 
   const direction =
@@ -84,18 +217,40 @@ export const stepGame = (state: GameState, settings: GameSettings): GameState =>
     };
   }
 
-  const ateFood = isSameCell(nextHead, state.food);
+  // Check if ate any food
+  const eatenFoodIndex = state.foods.findIndex(food => isSameCell(nextHead, food.position));
+  const ateFood = eatenFoodIndex !== -1;
+  const eatenFood = ateFood ? state.foods[eatenFoodIndex] : null;
+
+  // Update snake (grow if ate food)
   const snake = ateFood
     ? [nextHead, ...state.snake]
     : [nextHead, ...state.snake.slice(0, state.snake.length - 1)];
 
-  return {
+  // Apply effect if food was eaten
+  let newState = {
     ...state,
     snake,
-    food: ateFood ? placeFood(snake, settings.gridSize) : state.food,
     direction,
     pendingDirection: direction,
-    score: ateFood ? state.score + 1 : state.score,
     tickCount: state.tickCount + 1
+  };
+
+  if (ateFood && eatenFood) {
+    newState = applyEffect(newState, eatenFood.effect, eatenFood.value);
+  }
+
+  // Update foods
+  let newFoods = [...state.foods];
+  if (ateFood) {
+    // Remove eaten food
+    newFoods.splice(eatenFoodIndex, 1);
+    // Spawn new food to maintain maxConcurrentFoods
+    newFoods.push(placeFood(snake, newFoods, settings.gridSize, powerupTypes));
+  }
+
+  return {
+    ...newState,
+    foods: newFoods
   };
 };
