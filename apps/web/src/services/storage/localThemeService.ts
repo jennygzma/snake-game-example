@@ -3,6 +3,7 @@ import {
   themesListResponseSchema,
   themeResponseSchema,
   activeThemeResponseSchema,
+  profileSchema,
   type CustomTheme,
   type SaveThemeInput,
   type ThemesListResponse,
@@ -12,6 +13,7 @@ import {
 import type { ThemeService } from "../themeService";
 
 const THEMES_KEY = "snake.themes";
+const PROFILES_KEY = "snake.profiles";
 
 const readThemes = (): CustomTheme[] => {
   const raw = localStorage.getItem(THEMES_KEY);
@@ -29,32 +31,55 @@ const writeThemes = (themes: CustomTheme[]): void => {
   localStorage.setItem(THEMES_KEY, JSON.stringify(themes));
 };
 
+const getActiveProfileId = (): string => {
+  const raw = localStorage.getItem(PROFILES_KEY);
+  if (!raw) throw new Error("No active profile found");
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error("No active profile found");
+    const active = parsed
+      .map((value) => profileSchema.safeParse(value))
+      .filter((result): result is { success: true; data: ReturnType<typeof profileSchema.parse> } => result.success)
+      .map((result) => result.data)
+      .find((profile) => profile.isActive);
+    if (!active) throw new Error("No active profile found");
+    return active.id;
+  } catch {
+    throw new Error("No active profile found");
+  }
+};
+
 export const localThemeService: ThemeService = {
   async listThemes() {
-    const themes = readThemes();
+    const activeProfileId = getActiveProfileId();
+    const themes = readThemes().filter((theme) => theme.userId === activeProfileId);
     return themesListResponseSchema.parse({ themes }) satisfies ThemesListResponse;
   },
 
   async getTheme(themeId: string) {
+    const activeProfileId = getActiveProfileId();
     const themes = readThemes();
-    const theme = themes.find((t) => t.id === themeId);
+    const theme = themes.find((t) => t.id === themeId && t.userId === activeProfileId);
     if (!theme) return null;
     return themeResponseSchema.parse({ theme }) satisfies ThemeResponse;
   },
 
   async getActiveTheme() {
+    const activeProfileId = getActiveProfileId();
     const themes = readThemes();
-    const theme = themes.find((t) => t.isActive) ?? null;
+    const theme = themes.find((t) => t.userId === activeProfileId && t.isActive) ?? null;
     return activeThemeResponseSchema.parse({ theme }) satisfies ActiveThemeResponse;
   },
 
   async createTheme(input: SaveThemeInput) {
     const validated = saveThemeInputSchema.parse(input);
+    const activeProfileId = getActiveProfileId();
     const now = new Date().toISOString();
 
     const theme: CustomTheme = {
       id: crypto.randomUUID(),
-      userId: "local-user",
+      userId: activeProfileId,
       name: validated.name,
       fontFamily: validated.fontFamily,
       colors: validated.colors,
@@ -72,8 +97,9 @@ export const localThemeService: ThemeService = {
 
   async updateTheme(themeId: string, input: SaveThemeInput) {
     const validated = saveThemeInputSchema.parse(input);
+    const activeProfileId = getActiveProfileId();
     const themes = readThemes();
-    const existing = themes.find((t) => t.id === themeId);
+    const existing = themes.find((t) => t.id === themeId && t.userId === activeProfileId);
 
     if (!existing) return null;
 
@@ -97,11 +123,11 @@ export const localThemeService: ThemeService = {
   },
 
   async deleteTheme(themeId: string) {
+    const activeProfileId = getActiveProfileId();
     const themes = readThemes();
-    const filtered = themes.filter((t) => t.id !== themeId);
+    const filtered = themes.filter((t) => !(t.id === themeId && t.userId === activeProfileId));
 
     if (filtered.length === themes.length) {
-      // Theme not found
       return false;
     }
 
@@ -110,21 +136,19 @@ export const localThemeService: ThemeService = {
   },
 
   async activateTheme(themeId: string) {
+    const activeProfileId = getActiveProfileId();
     const themes = readThemes();
-    const targetIndex = themes.findIndex((t) => t.id === themeId);
+    const target = themes.find((t) => t.id === themeId && t.userId === activeProfileId);
+    if (!target) return null;
 
-    if (targetIndex === -1) return null;
-
-    // Deactivate all themes and activate the target
-    const updatedThemes = themes.map((t, index) => ({
-      ...t,
-      isActive: index === targetIndex
-    }));
-
+    const updatedThemes = themes.map((t) =>
+      t.userId === activeProfileId ? { ...t, isActive: t.id === themeId } : t
+    );
     writeThemes(updatedThemes);
 
+    const activatedTheme = updatedThemes.find((t) => t.id === themeId) ?? null;
     return themeResponseSchema.parse({
-      theme: updatedThemes[targetIndex]
+      theme: activatedTheme
     }) satisfies ThemeResponse;
   }
 };

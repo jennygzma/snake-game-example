@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { GameBoard } from "./GameBoard";
+import { GameBoard } from "../GameBoard";
 
 const meta = {
   title: "Game/GameBoard",

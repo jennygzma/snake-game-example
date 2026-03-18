@@ -3,6 +3,16 @@ import type { CustomTheme } from "@snake/contracts";
 import { accessibilityTokens, gameTokens } from "./tokens";
 import "./themeExtensions";
 
+const hexToRgba = (hex: string, alpha: number, fallback: string): string => {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return fallback;
+
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 /**
  * Convert a CustomTheme to a Material-UI theme object
  */
@@ -57,6 +67,88 @@ export const createThemeFromCustom = (customTheme: CustomTheme): Theme => {
       dangerText: colors.dangerText
     },
     icons: iconColors,
+    ui: {
+      nav: {
+        topBarBg: colors.panel,
+        topBarBorder: colors.panelBorder,
+        topBarShadow: gameTokens.shadow.panel,
+        profileHoverBg: hexToRgba(colors.text, 0.08, "rgba(0, 0, 0, 0.08)"),
+        profileAvatarBg: colors.action,
+        profileNameText: colors.text,
+        iconActiveColor: colors.action,
+        iconInactiveColor: colors.textMuted,
+        iconLabelColor: colors.textMuted,
+        tooltipBg: colors.text,
+        tooltipText: colors.panel
+      },
+      feedback: {
+        errorText: colors.danger,
+        errorBg: hexToRgba(colors.danger, 0.1, "rgba(170, 44, 44, 0.1)"),
+        errorBorder: hexToRgba(colors.danger, 0.35, "rgba(170, 44, 44, 0.35)")
+      },
+      profile: {
+        activeChipBg: colors.action,
+        activeChipText: colors.actionText,
+        deleteButtonBg: colors.danger,
+        deleteButtonHoverBg: colors.dangerHover,
+        deleteButtonText: colors.dangerText
+      },
+      settings: {
+        errorText: colors.danger
+      },
+      profileCard: {
+        avatarBg: colors.action
+      },
+      profilePicker: {
+        newCardBorder: colors.panelBorder,
+        newCardHoverBorder: colors.action,
+        newCardHoverBg: hexToRgba(colors.action, 0.1, "rgba(0, 0, 0, 0.06)"),
+        mutedText: colors.textMuted
+      },
+      avatarUpload: {
+        avatarBg: colors.action,
+        helperText: colors.textMuted,
+        errorText: colors.danger,
+        deleteIcon: colors.danger
+      },
+      dialog: {
+        descriptionText: colors.textMuted,
+        warningBg: hexToRgba(colors.danger, 0.1, "rgba(170, 44, 44, 0.1)"),
+        warningBorder: hexToRgba(colors.danger, 0.35, "rgba(170, 44, 44, 0.35)"),
+        warningTitle: colors.danger,
+        warningBody: colors.textMuted,
+        destructiveButtonBg: colors.danger,
+        destructiveButtonHoverBg: colors.dangerHover
+      },
+      leaderboard: {
+        mutedText: colors.textMuted,
+        divider: colors.panelBorder
+      },
+      stats: {
+        tabsBorder: colors.panelBorder
+      },
+      shared: {
+        panelBorder: colors.panelBorder
+      },
+      statCard: {
+        labelText: colors.textMuted
+      },
+      gameBoard: {
+        border: colors.panelBorder
+      },
+      themeGallery: {
+        mutedText: colors.textMuted,
+        swatchBorder: colors.panelBorder,
+        activeChipBg: colors.action,
+        activeChipText: colors.actionText,
+        appliedChipBg: colors.snake,
+        appliedChipText: colors.actionText
+      },
+      colorPicker: {
+        swatchBorder: colors.panelBorder,
+        swatchFocusRing: accessibilityTokens.colors.focusRing
+      }
+    },
     typography: {
       fontFamily: `'${fontFamily}', 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif`,
       h4: {
@@ -165,6 +257,88 @@ export const getDefaultTheme = (): Theme => {
     },
     icons: {
       default: "#ffffff"
+    },
+    ui: {
+      nav: {
+        topBarBg: gameTokens.colors.panel,
+        topBarBorder: gameTokens.colors.panelBorder,
+        topBarShadow: gameTokens.shadow.panel,
+        profileHoverBg: "rgba(23, 32, 24, 0.08)",
+        profileAvatarBg: gameTokens.colors.action,
+        profileNameText: gameTokens.colors.text,
+        iconActiveColor: gameTokens.colors.action,
+        iconInactiveColor: gameTokens.colors.textMuted,
+        iconLabelColor: gameTokens.colors.textMuted,
+        tooltipBg: gameTokens.colors.text,
+        tooltipText: gameTokens.colors.panel
+      },
+      feedback: {
+        errorText: gameTokens.colors.danger,
+        errorBg: "rgba(170, 44, 44, 0.1)",
+        errorBorder: "rgba(170, 44, 44, 0.35)"
+      },
+      profile: {
+        activeChipBg: gameTokens.colors.action,
+        activeChipText: gameTokens.colors.actionText,
+        deleteButtonBg: gameTokens.colors.danger,
+        deleteButtonHoverBg: gameTokens.colors.dangerHover,
+        deleteButtonText: gameTokens.colors.dangerText
+      },
+      settings: {
+        errorText: gameTokens.colors.danger
+      },
+      profileCard: {
+        avatarBg: gameTokens.colors.action
+      },
+      profilePicker: {
+        newCardBorder: gameTokens.colors.panelBorder,
+        newCardHoverBorder: gameTokens.colors.action,
+        newCardHoverBg: "rgba(31, 109, 47, 0.1)",
+        mutedText: gameTokens.colors.textMuted
+      },
+      avatarUpload: {
+        avatarBg: gameTokens.colors.action,
+        helperText: gameTokens.colors.textMuted,
+        errorText: gameTokens.colors.danger,
+        deleteIcon: gameTokens.colors.danger
+      },
+      dialog: {
+        descriptionText: gameTokens.colors.textMuted,
+        warningBg: "rgba(170, 44, 44, 0.1)",
+        warningBorder: "rgba(170, 44, 44, 0.35)",
+        warningTitle: gameTokens.colors.danger,
+        warningBody: gameTokens.colors.textMuted,
+        destructiveButtonBg: gameTokens.colors.danger,
+        destructiveButtonHoverBg: gameTokens.colors.dangerHover
+      },
+      leaderboard: {
+        mutedText: gameTokens.colors.textMuted,
+        divider: gameTokens.colors.panelBorder
+      },
+      stats: {
+        tabsBorder: gameTokens.colors.panelBorder
+      },
+      shared: {
+        panelBorder: gameTokens.colors.panelBorder
+      },
+      statCard: {
+        labelText: gameTokens.colors.textMuted
+      },
+      gameBoard: {
+        border: gameTokens.colors.panelBorder
+      },
+      themeGallery: {
+        mutedText: gameTokens.colors.textMuted,
+        swatchBorder: gameTokens.colors.panelBorder,
+        activeChipBg: gameTokens.colors.action,
+        activeChipText: gameTokens.colors.actionText,
+        appliedChipBg: gameTokens.colors.snake,
+        appliedChipText: gameTokens.colors.actionText
+      },
+      colorPicker: {
+        swatchBorder: gameTokens.colors.panelBorder,
+        swatchFocusRing: accessibilityTokens.colors.focusRing
+      }
     },
     typography: {
       fontFamily: "'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif",

@@ -7,19 +7,23 @@ import {
   activeThemeResponseSchema
 } from "@snake/contracts";
 import { createThemeDataService } from "../services/themeDataService";
+import { profileQueries } from "../db/profileQueries";
 
 export const createThemeRouter = (db: Database) => {
   const themeService = createThemeDataService(db);
+  const profileQs = profileQueries(db);
   const router = Router();
 
-  // Hardcoded user ID for single-user mode (matches gameDataService pattern)
-  const USER_ID = "dev-user-1";
-
   /**
-   * GET /themes - List all themes for the user
+   * GET /themes - List all themes for the active profile
    */
   router.get("/", (_req, res) => {
-    const payload = themesListResponseSchema.parse(themeService.listThemes(USER_ID));
+    const activeProfile = profileQs.getActive();
+    if (!activeProfile) {
+      res.status(404).json({ message: "No active profile found" });
+      return;
+    }
+    const payload = themesListResponseSchema.parse(themeService.listThemes(activeProfile.id));
     res.json(payload);
   });
 
@@ -37,10 +41,15 @@ export const createThemeRouter = (db: Database) => {
   });
 
   /**
-   * GET /themes/active - Get the currently active theme
+   * GET /themes/active - Get the currently active theme for the active profile
    */
   router.get("/active/current", (_req, res) => {
-    const payload = activeThemeResponseSchema.parse(themeService.getActiveTheme(USER_ID));
+    const activeProfile = profileQs.getActive();
+    if (!activeProfile) {
+      res.status(404).json({ message: "No active profile found" });
+      return;
+    }
+    const payload = activeThemeResponseSchema.parse(themeService.getActiveTheme(activeProfile.id));
     res.json(payload);
   });
 
@@ -54,7 +63,13 @@ export const createThemeRouter = (db: Database) => {
       return;
     }
 
-    const payload = themeResponseSchema.parse(themeService.createTheme(USER_ID, parsedBody.data));
+    const activeProfile = profileQs.getActive();
+    if (!activeProfile) {
+      res.status(404).json({ message: "No active profile found" });
+      return;
+    }
+
+    const payload = themeResponseSchema.parse(themeService.createTheme(activeProfile.id, parsedBody.data));
     res.status(201).json(payload);
   });
 

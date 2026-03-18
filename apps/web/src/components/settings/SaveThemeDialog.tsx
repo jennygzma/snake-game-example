@@ -1,13 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Box
-} from "@mui/material";
-import { AppButton } from "../shared/AppButton";
+import { TextField } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { AppDialogShell } from "../shared/AppDialogShell";
+import { IconActionButton } from "../shared/IconActionButton";
+import { approvedIcons } from "../../theme/approvedIcons";
 
 interface SaveThemeDialogProps {
   open: boolean;
@@ -17,6 +13,7 @@ interface SaveThemeDialogProps {
 }
 
 export const SaveThemeDialog = ({ open, initialName = "", onClose, onSave }: SaveThemeDialogProps) => {
+  const theme = useTheme();
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,61 +64,54 @@ export const SaveThemeDialog = ({ open, initialName = "", onClose, onSave }: Sav
   };
 
   return (
-    <Dialog
+    <AppDialogShell
       open={open}
       onClose={saving ? undefined : onClose}
-      maxWidth="sm"
-      fullWidth
-      aria-labelledby="save-theme-dialog-title"
-      aria-describedby="save-theme-dialog-description"
+      title="Save Theme"
+      titleId="save-theme-dialog-title"
+      descriptionId="save-theme-dialog-description"
+      description="Enter a name for your custom theme:"
+      actions={
+        <>
+          <IconActionButton
+            tone="neutral"
+            variant="text"
+            icon={<approvedIcons.close />}
+            iconColor={theme.icons.close || theme.icons.default}
+            label="Cancel"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Cancel save theme"
+          />
+          <IconActionButton
+            tone="primary"
+            onClick={handleSave}
+            variant="contained"
+            icon={<approvedIcons.check />}
+            iconColor={theme.icons.check || theme.icons.default}
+            label={saving ? "Saving..." : "Save"}
+            disabled={saving || !name.trim()}
+            aria-label="Save theme"
+          />
+        </>
+      }
     >
-      <DialogTitle id="save-theme-dialog-title">
-        Save Theme
-      </DialogTitle>
-      
-      <DialogContent>
-        <Box id="save-theme-dialog-description" sx={{ mb: 2 }}>
-          Enter a name for your custom theme:
-        </Box>
-        
-        <TextField
-          autoFocus
-          fullWidth
-          label="Theme Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyPress={handleKeyPress}
-          error={!!error}
-          helperText={error || `${name.length}/50 characters`}
-          disabled={saving}
-          required
-          inputProps={{
-            "aria-label": "Theme name",
-            maxLength: 50
-          }}
-        />
-      </DialogContent>
-
-      <DialogActions>
-        <AppButton
-          tone="neutral"
-          variant="text"
-          onClick={onClose}
-          disabled={saving}
-          aria-label="Cancel save theme"
-        >
-          Cancel
-        </AppButton>
-        <AppButton
-          tone="primary"
-          onClick={handleSave}
-          variant="contained"
-          disabled={saving || !name.trim()}
-          aria-label="Save theme"
-        >
-          {saving ? "Saving..." : "Save"}
-        </AppButton>
-      </DialogActions>
-    </Dialog>
+      <TextField
+        autoFocus
+        fullWidth
+        label="Theme Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyPress={handleKeyPress}
+        error={!!error}
+        helperText={error || `${name.length}/50 characters`}
+        disabled={saving}
+        required
+        inputProps={{
+          "aria-label": "Theme name",
+          maxLength: 50
+        }}
+      />
+    </AppDialogShell>
   );
 };

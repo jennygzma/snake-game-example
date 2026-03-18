@@ -38,7 +38,7 @@ export const ColorPickerField = ({
                 height: 32,
                 borderRadius: 1,
                 backgroundColor: value,
-                border: (theme) => `2px solid ${theme.palette.divider}`,
+                border: (theme) => `2px solid ${theme.ui.colorPicker.swatchBorder}`,
                 cursor: disabled ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -51,7 +51,7 @@ export const ColorPickerField = ({
                       opacity: 0.8
                     },
                 "&:focus-within": {
-                  outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+                  outline: (theme) => `2px solid ${theme.ui.colorPicker.swatchFocusRing}`,
                   outlineOffset: 2
                 }
               }}

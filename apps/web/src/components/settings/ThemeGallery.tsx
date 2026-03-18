@@ -1,6 +1,8 @@
 import { Box, Typography, Card, CardContent, CardActions, Chip } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { CustomTheme } from "@snake/contracts";
-import { AppButton } from "../shared/AppButton";
+import { IconActionButton } from "../shared/IconActionButton";
+import { approvedIcons } from "../../theme/approvedIcons";
 
 interface ThemeGalleryProps {
   themes: CustomTheme[];
@@ -17,10 +19,12 @@ export const ThemeGallery = ({
   onEdit,
   onDelete
 }: ThemeGalleryProps) => {
+  const muiTheme = useTheme();
+
   if (themes.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ color: muiTheme.ui.themeGallery.mutedText }}>
           No saved themes yet. Create your first custom theme!
         </Typography>
       </Box>
@@ -54,9 +58,15 @@ export const ThemeGallery = ({
             {isActive && (
               <Chip
                 label="Active"
-                color="primary"
                 size="small"
-                sx={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  zIndex: 1,
+                  backgroundColor: muiTheme.ui.themeGallery.activeChipBg,
+                  color: muiTheme.ui.themeGallery.activeChipText
+                }}
               />
             )}
 
@@ -65,12 +75,17 @@ export const ThemeGallery = ({
                 {theme.name}
               </Typography>
 
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" sx={{ color: muiTheme.ui.themeGallery.mutedText }} gutterBottom>
                 Font: {theme.fontFamily}
               </Typography>
 
               <Box sx={{ mt: 2 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                <Typography
+                  variant="caption"
+                  sx={{ color: muiTheme.ui.themeGallery.mutedText }}
+                  gutterBottom
+                  display="block"
+                >
                   Color Preview:
                 </Typography>
                 <Box
@@ -87,7 +102,7 @@ export const ThemeGallery = ({
                       height: 24,
                       backgroundColor: theme.colors.snake,
                       borderRadius: 0.5,
-                      border: (t) => `1px solid ${t.palette.divider}`
+                      border: `1px solid ${muiTheme.ui.themeGallery.swatchBorder}`
                     }}
                     title="Snake"
                   />
@@ -97,7 +112,7 @@ export const ThemeGallery = ({
                       height: 24,
                       backgroundColor: theme.colors.food,
                       borderRadius: 0.5,
-                      border: (t) => `1px solid ${t.palette.divider}`
+                      border: `1px solid ${muiTheme.ui.themeGallery.swatchBorder}`
                     }}
                     title="Food"
                   />
@@ -107,7 +122,7 @@ export const ThemeGallery = ({
                       height: 24,
                       backgroundColor: theme.colors.action,
                       borderRadius: 0.5,
-                      border: (t) => `1px solid ${t.palette.divider}`
+                      border: `1px solid ${muiTheme.ui.themeGallery.swatchBorder}`
                     }}
                     title="Action"
                   />
@@ -117,7 +132,7 @@ export const ThemeGallery = ({
                       height: 24,
                       backgroundColor: theme.colors.pause,
                       borderRadius: 0.5,
-                      border: (t) => `1px solid ${t.palette.divider}`
+                      border: `1px solid ${muiTheme.ui.themeGallery.swatchBorder}`
                     }}
                     title="Pause"
                   />
@@ -127,7 +142,7 @@ export const ThemeGallery = ({
                       height: 24,
                       backgroundColor: theme.colors.danger,
                       borderRadius: 0.5,
-                      border: (t) => `1px solid ${t.palette.divider}`
+                      border: `1px solid ${muiTheme.ui.themeGallery.swatchBorder}`
                     }}
                     title="Danger"
                   />
@@ -137,45 +152,51 @@ export const ThemeGallery = ({
 
             <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 1 }}>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <AppButton
+                <IconActionButton
                   size="small" 
                   variant="outlined"
                   tone="neutral"
+                  icon={<approvedIcons.edit />}
+                  iconColor={muiTheme.icons.edit || muiTheme.icons.default}
+                  label={`Edit ${theme.name}`}
+                  iconOnly
                   onClick={() => onEdit(theme)} 
-                  aria-label={`Edit ${theme.name}`}
                   sx={{ fontWeight: 600 }}
-                >
-                  Edit
-                </AppButton>
-                <AppButton
+                />
+                <IconActionButton
                   size="small"
                   tone="danger"
                   variant="text"
+                  icon={<approvedIcons.delete />}
+                  iconColor={muiTheme.icons.delete || muiTheme.icons.default}
+                  label={`Delete ${theme.name}`}
+                  iconOnly
                   onClick={() => onDelete(theme.id)}
                   disabled={isActive}
-                  aria-label={`Delete ${theme.name}`}
-                >
-                  Delete
-                </AppButton>
+                />
               </Box>
               {!isActive && (
-                <AppButton
+                <IconActionButton
                   size="small"
                   variant="contained"
                   tone="primary"
+                  icon={<approvedIcons.check />}
+                  iconColor={muiTheme.icons.check || muiTheme.icons.default}
+                  label={`Activate ${theme.name}`}
+                  iconOnly
                   onClick={() => onActivate(theme.id)}
-                  aria-label={`Activate ${theme.name}`}
                   sx={{ fontWeight: 600 }}
-                >
-                  Activate
-                </AppButton>
+                />
               )}
               {isActive && (
                 <Chip 
                   label="Applied" 
-                  color="success" 
                   size="small"
-                  sx={{ fontWeight: 600 }}
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: muiTheme.ui.themeGallery.appliedChipBg,
+                    color: muiTheme.ui.themeGallery.appliedChipText
+                  }}
                 />
               )}
             </CardActions>

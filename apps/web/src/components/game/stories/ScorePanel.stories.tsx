@@ -1,10 +1,14 @@
 import type { Profile } from "@snake/contracts";
 import type { Meta, StoryObj } from "@storybook/react";
-import { ScorePanel } from "./ScorePanel";
+import { ScorePanel } from "../ScorePanel";
 
 const demoPlayer: Profile = {
-  id: "player-1",
-  name: "Jenny"
+  id: "demo-player-1",
+  name: "Player",
+  avatarBase64: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  isActive: true
 };
 
 const meta = {

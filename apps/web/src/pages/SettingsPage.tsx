@@ -63,13 +63,13 @@ export const SettingsPage = () => {
         <Typography variant="h4" gutterBottom>
           Settings
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
           Customize your game theme and colors
         </Typography>
       </Box>
 
       {error && (
-        <Typography color="error" variant="body2">
+        <Typography variant="body2" sx={{ color: (theme) => theme.ui.settings.errorText }}>
           {error}
         </Typography>
       )}

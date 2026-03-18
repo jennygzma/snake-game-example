@@ -1,15 +1,22 @@
 export const gameTokens = {
   colors: {
+    // App surfaces
     bg: "#eff3e9",
     panel: "#f9fbf6",
     panelBorder: "#d6dec8",
+
+    // Primary typography
     text: "#172018",
     textMuted: "#607064",
+
+    // Snake gameplay visuals
     snake: "#1f6d2f",
     snakeHead: "#0d4f20",
     food: "#f15a24",
     boardGrid: "rgba(20, 30, 20, 0.08)",
     boardBg: "#edf3e4",
+
+    // Interactive controls
     action: "#1f6d2f",
     actionHover: "#165425",
     actionText: "#f7fbf4",

@@ -14,7 +14,7 @@ export const ScorePanel = ({ player, score, highScore, status }: ScorePanelProps
   return (
     <Stack spacing={1.5}>
       <Typography variant="h5">Snake</Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: (theme) => theme.ui.leaderboard.mutedText }}>
         {player ? `Player: ${player.name}` : "Loading player..."}
       </Typography>
       <StatCard label="Score" value={score} />

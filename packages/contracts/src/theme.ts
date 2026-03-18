@@ -34,11 +34,25 @@ export const themeColorsSchema = z.object({
 // Icon-specific colors (optional overrides)
 export const themeIconColorsSchema = z.object({
   default: colorSchema,
+  active: colorSchema.optional(),
+  gameActive: colorSchema.optional(),
+  statsActive: colorSchema.optional(),
+  settingsActive: colorSchema.optional(),
+  add: colorSchema.optional(),
+  barChart: colorSchema.optional(),
+  check: colorSchema.optional(),
+  close: colorSchema.optional(),
+  delete: colorSchema.optional(),
+  edit: colorSchema.optional(),
   play: colorSchema.optional(),
   pause: colorSchema.optional(),
+  photoCamera: colorSchema.optional(),
   reset: colorSchema.optional(),
   settings: colorSchema.optional(),
-  stats: colorSchema.optional()
+  sportsEsports: colorSchema.optional(),
+  stats: colorSchema.optional(),
+  swapHoriz: colorSchema.optional(),
+  warning: colorSchema.optional()
 });
 
 // Input for saving a new theme
